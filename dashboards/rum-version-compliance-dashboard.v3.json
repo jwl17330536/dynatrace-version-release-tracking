@@ -1,0 +1,427 @@
+{
+  "id": "111751cf-73fa-4435-acbb-86f8d7c95445",
+  "name": "Rum Version Compliance v3",
+  "type": "dashboard",
+  "owner": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "isPrivate": true,
+  "version": 1,
+  "modificationInfo": {
+    "createdBy": "",
+    "createdTime": "2026-05-16T01:47:44.98Z",
+    "lastModifiedBy": "",
+    "lastModifiedTime": "2026-05-16T01:47:44.98Z"
+  },
+  "content": {
+    "annotations": [],
+    "layouts": {
+      "0": {
+        "h": 2,
+        "w": 20,
+        "x": 0,
+        "y": 0
+      },
+      "1": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 2
+      },
+      "10": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 6
+      },
+      "11": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 6
+      },
+      "12": {
+        "h": 4,
+        "w": 20,
+        "x": 0,
+        "y": 10
+      },
+      "13": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 6
+      },
+      "2": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 2
+      },
+      "3": {
+        "h": 4,
+        "w": 6,
+        "x": 8,
+        "y": 2
+      },
+      "4": {
+        "h": 5,
+        "w": 20,
+        "x": 0,
+        "y": 14
+      },
+      "5": {
+        "h": 10,
+        "w": 20,
+        "x": 0,
+        "y": 19
+      },
+      "6": {
+        "h": 4,
+        "w": 3,
+        "x": 14,
+        "y": 2
+      },
+      "7": {
+        "h": 4,
+        "w": 3,
+        "x": 17,
+        "y": 2
+      },
+      "8": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 6
+      },
+      "9": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 6
+      }
+    },
+    "settings": {
+      "defaultTimeframe": {
+        "enabled": true,
+        "value": {
+          "from": "now()-30d",
+          "to": "now()"
+        }
+      },
+      "gridLayout": {
+        "columnsCount": 20,
+        "mode": "responsive"
+      }
+    },
+    "tiles": {
+      "0": {
+        "content": "# RUM Version Policy Compliance\n\nShows policy-target compliance for manually injected (agentless) RUM applications.\n\nPolicy model:\n- effective_target_version: selected from tenant configured policy (custom if set, else latest_stable)\n- on_target: app version equals effective target\n- below_target: app is supported but below target\n- unsupported: app is below support floor only when an explicit floor is exposed by API\n- above_target: app is newer than current effective target\n\nHuman-readable labels:\n- when Dynatrace exposes a readable tag label in the manual insertion tag response, it is shown as Effective Target Label\n- otherwise the dashboard falls back to numeric version IDs only\n\nExpected events:\n- RUMJSVersion (per app)\n- RUMJSVersionSyncSummary (per run)\n- RUMJSBaseline (latest, oldest_supported, effective_target)\n- RUMJSPolicySummary (on/below/unsupported counts)\n- RUMJSPolicyApp (per-app policy status)\n\nSupport floor behavior:\n- if support floor is not exposed by API, unsupported remains 0 and versions below target are classified as below_target\n",
+        "title": "",
+        "type": "markdown"
+      },
+      "1": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_api\" and isNotNull(app_count) | sort timestamp desc | limit 1 | fields app_count = toLong(app_count)",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Apps Synced (Latest Run)",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "10": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_policy_summary\" and isNotNull(apps_on_target) | sort timestamp desc | limit 1 | fields apps_on_target = toLong(apps_on_target)",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Apps On Target",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "11": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_policy_summary\" and isNotNull(apps_below_target) | sort timestamp desc | limit 1 | fields apps_below_target = toLong(apps_below_target)",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Apps Below Target",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "12": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_policy_summary\" and isNotNull(apps_unsupported) | sort timestamp desc | limit 1 | fields apps_unsupported = toLong(apps_unsupported)",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Apps Unsupported (Known Floor Only)",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "13": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_policy_summary\" and isNotNull(effective_target_label) and effective_target_label != \"\" | sort timestamp desc | limit 1 | fields effective_target_label",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Effective Target Label",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "2": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_api\" and isNotNull(versions_found) | sort timestamp desc | limit 1 | fields versions_found = toLong(versions_found)",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Distinct JS Versions (Latest Run)",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "3": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_api\" and isNotNull(app_count) and isNotNull(fetched_at) | sort timestamp desc | limit 1 | fields fetched_at",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Last Sync Time (Latest Run)",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "4": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_api\" and isNotNull(application_id) and isNotNull(js_library_version) | fields ts = timestamp, app_id = application_id, js_version = js_library_version | sort ts desc | dedup app_id | summarize apps = count(), by: {js_version} | sort apps desc, js_version desc",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 3,
+          "maxResultRecords": 1000
+        },
+        "title": "Apps by JS Library Version",
+        "type": "data",
+        "visualization": "categoricalBarChart",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "5": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_policy_app\" and isNotNull(application_id) and isNotNull(policy_status) | fields ts = timestamp, app_id = application_id, app_name = application_name, js_version = js_library_version, human_readable_target_label = human_readable_target_label, policy_status = policy_status, effective_target_version = effective_target_version, effective_target_policy = effective_target_policy, latest_version = latest_version, oldest_supported_version = oldest_supported_version, support_floor_known = support_floor_known, fetched_at = fetched_at | fieldsAdd app_name = coalesce(app_name, app_id) | sort ts desc | dedup app_id | fields app_name, app_id, policy_status, js_version, human_readable_target_label, effective_target_version, effective_target_policy, oldest_supported_version, support_floor_known, latest_version, fetched_at, last_seen = ts | sort policy_status asc, app_name asc",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 10,
+          "maxResultRecords": 5000
+        },
+        "title": "RUM Policy Status by Application",
+        "type": "data",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"app_id\"]": 260,
+              "[\"app_name\"]": 280,
+              "[\"effective_target_policy\"]": 180,
+              "[\"effective_target_version\"]": 180,
+              "[\"fetched_at\"]": 240,
+              "[\"human_readable_target_label\"]": 220,
+              "[\"js_version\"]": 180,
+              "[\"last_seen\"]": 240,
+              "[\"latest_version\"]": 180,
+              "[\"oldest_supported_version\"]": 180,
+              "[\"policy_status\"]": 170,
+              "[\"support_floor_known\"]": 160
+            }
+          }
+        }
+      },
+      "6": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_baseline\" and isNotNull(latest_version) | sort timestamp desc | limit 1 | fields latest_version",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Latest Available RUM Version",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "7": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_baseline\" and isNotNull(oldest_supported_version) | sort timestamp desc | limit 1 | fields oldest_supported_version",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Support Floor Version (If Exposed)",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "8": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_policy_summary\" and isNotNull(effective_target_version) | sort timestamp desc | limit 1 | fields effective_target_version",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Effective Target Version",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "9": {
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          },
+          "enabled": false
+        },
+        "query": "fetch events | filter source == \"rum_classic_policy_summary\" and isNotNull(effective_target_policy) | sort timestamp desc | limit 1 | fields effective_target_policy",
+        "querySettings": {
+          "defaultSamplingRatio": 10,
+          "defaultScanLimitGbytes": 500,
+          "enableSampling": false,
+          "maxResultMegaBytes": 1,
+          "maxResultRecords": 1000
+        },
+        "title": "Effective Target Policy",
+        "type": "data",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      }
+    },
+    "variables": [],
+    "version": 21
+  }
+}

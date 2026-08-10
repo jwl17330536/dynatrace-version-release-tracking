@@ -1,0 +1,129 @@
+{
+  "id": "152d125f-a3cc-470b-a612-ba4e83fd0016",
+  "name": "Dynatrace Component Release Tracking v3",
+  "type": "dashboard",
+  "content": {
+    "version": 21,
+    "tiles": {
+      "0": {
+        "type": "markdown",
+        "title": "",
+        "content": "# Release Intelligence Command Center v3\n\n## Status Legend\n- 🟢 Healthy: current data and no immediate action\n- 🟠 Watch: partial data or upcoming change\n- 🔴 Action: unavailable source or upgrade risk\n\n## What to do first\n1. Check **Action Required Components**\n2. Review **Runtime Source Health**\n3. Open **Upgrade Queue** for versions newer than running\n\nThis dashboard is designed for fast operations triage: more signal, fewer raw tables."
+      },
+      "1": {
+        "type": "data",
+        "title": "Action Required Components",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | summarize runtime_issue = countIf(source_status != \"current\"), by: { component } | join [ load \"/lookups/dt_component_release_status\" | filter is_latest == \"true\" | summarize upgrade_issue = countIf(is_newer_than_running == \"true\"), by: { component } ], on: { component } | fieldsAdd upgrade_issue = right.upgrade_issue | summarize action_required = countIf(runtime_issue > 0 or upgrade_issue > 0)",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "2": {
+        "type": "data",
+        "title": "Components In Watch State",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | summarize runtime_watch = countIf(source_status == \"partial\" or source_status == \"not_configured\"), by: { component } | join [ load \"/lookups/dt_component_release_status\" | summarize release_watch = countIf(release_status != \"current\" or is_next_planned == \"true\"), by: { component } ], on: { component } | fieldsAdd release_watch = right.release_watch | summarize watch_components = countIf(runtime_watch > 0 or release_watch > 0)",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "3": {
+        "type": "data",
+        "title": "Data Freshness (Release + Runtime)",
+        "query": "load \"/lookups/dt_component_release_status\" | summarize latest_release_fetch = max(fetched_at) | fieldsAdd join_key = \"global\" | join [ load \"/lookups/dt_component_runtime_versions\" | summarize latest_runtime_fetch = max(observed_at) | fieldsAdd join_key = \"global\" ], on: { join_key } | fields latest_release_fetch, latest_runtime_fetch = right.latest_runtime_fetch",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "rowDensity": "condensed"
+          }
+        }
+      },
+      "4": {
+        "type": "data",
+        "title": "Runtime Source Health",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | summarize rows = count(), by: { component, source_status } | fieldsAdd status_badge = if(source_status == \"current\", \"🟢 current\", else: if(source_status == \"partial\", \"🟠 partial\", else: if(source_status == \"not_configured\", \"🟠 not configured\", else: \"🔴 unavailable\"))) | sort component asc, source_status asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "rowDensity": "condensed"
+          }
+        }
+      },
+      "5": {
+        "type": "data",
+        "title": "Release Radar (Top Published Versions)",
+        "query": "load \"/lookups/dt_component_release_status\" | filter released_version != \"\" and released_version != \"Not yet published\" | summarize rows = count(), by: { component, released_version } | sort component asc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "rowDensity": "condensed"
+          }
+        }
+      },
+      "6": {
+        "type": "data",
+        "title": "Upgrade Queue (Newer Than Running)",
+        "query": "load \"/lookups/dt_component_release_status\" | filter is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\" | fields component, running_version, latest_published = released_version, is_newer_than_running, release_url, fetched_at | fieldsAdd action = if(is_newer_than_running == \"true\", \"🔴 newer available\", else: if(running_version == \"\" or running_version == \"-\", \"🟠 runtime unknown\", else: \"🟢 aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)) | fields component, running_version, latest_published, action, release_url, fetched_at, action_priority | sort action_priority asc, component asc | fields component, running_version, latest_published, action, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "rowDensity": "condensed",
+            "columnWidths": {
+              "[\"component\"]": 160,
+              "[\"running_version\"]": 170,
+              "[\"latest_published\"]": 170,
+              "[\"action\"]": 170,
+              "[\"release_url\"]": 360
+            }
+          }
+        }
+      },
+      "7": {
+        "type": "data",
+        "title": "AI Risk and Highlights (Latest Rows)",
+        "query": "load \"/lookups/dt_component_release_status\" | filter is_latest == \"true\" | fields component, released_version, risk = if(breaking_changes_summary == \"\" or breaking_changes_summary == \"-\", \"No breaking changes extracted\", else: breaking_changes_summary), highlights = if(highlights_summary == \"\" or highlights_summary == \"-\", \"No highlights extracted\", else: highlights_summary), release_url | sort component asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "rowDensity": "condensed",
+            "columnWidths": {
+              "[\"component\"]": 150,
+              "[\"released_version\"]": 160,
+              "[\"risk\"]": 380,
+              "[\"highlights\"]": 380
+            }
+          }
+        }
+      },
+      "8": {
+        "type": "markdown",
+        "title": "",
+        "content": "## SaaS Rollout Expectations\n\n- SaaS updates roll out progressively by Dynatrace-managed waves.\n- A published release may appear before your tenant receives it.\n- Treat **newer available** as planning signal, not automatic incident.\n\nUse this order for enterprise response:\n1. Validate scope (which components are behind).\n2. Review breaking changes and rollout notes.\n3. Trigger admin notification workflow when action is needed."
+      }
+    },
+    "layouts": {
+      "0": { "x": 0, "y": 0, "w": 20, "h": 4 },
+      "1": { "x": 0, "y": 4, "w": 6, "h": 4 },
+      "2": { "x": 6, "y": 4, "w": 6, "h": 4 },
+      "3": { "x": 12, "y": 4, "w": 8, "h": 4 },
+      "4": { "x": 0, "y": 8, "w": 10, "h": 7 },
+      "5": { "x": 10, "y": 8, "w": 10, "h": 7 },
+      "6": { "x": 0, "y": 15, "w": 20, "h": 8 },
+      "7": { "x": 0, "y": 23, "w": 20, "h": 8 },
+      "8": { "x": 0, "y": 31, "w": 20, "h": 5 }
+    },
+    "variables": [],
+    "settings": {
+      "gridLayout": {
+        "mode": "responsive",
+        "columnsCount": 20
+      }
+    }
+  }
+}

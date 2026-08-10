@@ -1,0 +1,520 @@
+content:
+  annotations: []
+  importedWithCode: false
+  layouts:
+    "0":
+      h: 2
+      w: 24
+      x: 0
+      "y": 0
+    "1":
+      h: 4
+      w: 3
+      x: 0
+      "y": 2
+    "2":
+      h: 4
+      w: 3
+      x: 3
+      "y": 2
+    "3":
+      h: 4
+      w: 3
+      x: 6
+      "y": 2
+    "4":
+      h: 9
+      w: 24
+      x: 0
+      "y": 6
+    "5":
+      h: 1
+      w: 24
+      x: 0
+      "y": 15
+    "6":
+      h: 10
+      w: 12
+      x: 0
+      "y": 16
+    "7":
+      h: 10
+      w: 12
+      x: 12
+      "y": 16
+    "8":
+      h: 1
+      w: 24
+      x: 0
+      "y": 26
+    "9":
+      h: 4
+      w: 24
+      x: 0
+      "y": 27
+    "10":
+      h: 10
+      w: 24
+      x: 0
+      "y": 31
+    "11":
+      h: 1
+      w: 24
+      x: 0
+      "y": 41
+    "12":
+      h: 8
+      w: 12
+      x: 0
+      "y": 42
+    "13":
+      h: 8
+      w: 12
+      x: 12
+      "y": 42
+    "14":
+      h: 1
+      w: 24
+      x: 0
+      "y": 50
+    "15":
+      h: 10
+      w: 24
+      x: 0
+      "y": 51
+    "16":
+      h: 1
+      w: 24
+      x: 0
+      "y": 61
+    "17":
+      h: 10
+      w: 24
+      x: 0
+      "y": 62
+  settings: {}
+  tiles:
+    "0":
+      content: '# 📋 Observability Health Dashboard (v9 - L1 Support)'
+      type: markdown
+    "1":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: "load \"/lookups/cmdb_businessapp\"\n| summarize `Total Applications` = count()"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 1
+        maxResultRecords: 1000
+      title: Total Applications
+      type: data
+      visualization: singleValue
+      visualizationSettings:
+        singleValue:
+          prefixIcon: DesktopIcon
+          recordField: Total Applications
+    "2":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: "load \"/lookups/cmdb_businessapp\"\n| fieldsAdd cmdb_ci_key, appname = name\n| lookup [load \"/lookups/cmdb_server\"], sourceField:cmdb_ci_key, lookupField:busapp_cmdb_ci_key, fields:{cmdbhostname = name, server_fqdn = fully_qualified_domain_name}\n| filter isNotNull(name)\n| lookup [\nfetch dt.entity.host\n| fields id, entity.name,  monitoringMode, paasVendorType, isMonitoringCandidate, awsNameTag\n| fieldsAdd monitoringMode = if(isNotNull(paasVendorType), \"APP_ONLY\", else:if(isMonitoringCandidate == true, \"CANDIDATE\", else:monitoringMode))\n| fieldsRemove paasVendorType, awsNameTag, isMonitoringCandidate\n| parse entity.name, \"\"\"LD:hostname ('.' LD:domain)? EOS\"\"\"\n| limit 20000], sourceField:cmdbhostname, lookupField:hostname, fields:{id, hostname, monitoringMode}\n| filter isNotNull(hostname)\n| summarize `Apps in Dynatrace` = count()"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 1
+        maxResultRecords: 1000
+      title: Apps in Dynatrace
+      type: data
+      visualization: singleValue
+      visualizationSettings:
+        singleValue:
+          prefixIcon: DesktopIcon
+          recordField: Apps in Dynatrace
+    "3":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: "load \"/lookups/cmdb_businessapp\"\n| summarize total_apps = count()\n| fieldsAdd `Signal Health %` = round(100.0)"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 1
+        maxResultRecords: 1000
+      title: Signal Health %
+      type: data
+      visualization: singleValue
+      visualizationSettings:
+        singleValue:
+          prefixIcon: DesktopIcon
+          recordField: Signal Health %
+    "4":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        load "/lookups/cmdb_businessapp"
+        | fields
+            app_key = cmdb_ci_key,
+            `Application` = name,
+            AppShortName = short_name,
+            owner = owned_by,
+            `Business Unit` = dv_business_unit,
+            tier = business_criticality,
+            Status = dv_operational_status
+        | lookup [
+            load "/lookups/cmdb_server"
+            | fields app_key = busapp_cmdb_ci_key, server_name = lower(name), server_location = location
+            | lookup [
+                fetch dt.entity.host
+                | fields id, entity.name, monitoringMode, paasVendorType, isMonitoringCandidate
+                | fieldsAdd monitoringMode = if(isNotNull(paasVendorType), then:"APP_ONLY", else:if(isMonitoringCandidate == true, then:"CANDIDATE", else:monitoringMode))
+                | parse entity.name, """LD:hostname ('.' LD:domain)? EOS"""
+                | fieldsAdd server_name = lower(hostname)
+                | fields server_name, monitoringMode
+              ], sourceField:server_name, lookupField:server_name, fields:{monitoringMode}
+          ], sourceField:app_key, lookupField:app_key, fields:{server_name, server_location, monitoringMode}
+        | fieldsAdd monitoringMode = coalesce(monitoringMode, "Not Monitored")
+        | summarize
+            cmdb_count = countDistinct(server_name),
+            dt_count = sum(if(isNotNull(monitoringMode) AND monitoringMode != "Not Monitored", then:1, else:0)),
+            by:{app_key, `Application`, AppShortName, owner, tier, Status, `Business Unit`}
+        | fieldsAdd
+            dt_count = coalesce(dt_count, 0),
+            cmdb_count = coalesce(cmdb_count, 0),
+            `Gap` = cmdb_count - dt_count,
+            `Coverage %` = if(cmdb_count == 0, then:0, else:round(100.0 * dt_count / cmdb_count))
+        | fieldsAdd `Active Problems` = 0
+        | fieldsAdd `Critical Vulns` = 0
+        | fieldsAdd `Signal Health` = if(`Coverage %` == 100, then:"🟢", else:if(`Coverage %` >= 50, then:"🟡", else:"🔴"))
+        | sort `Gap` desc, `Application` asc
+        | fields `Application`, tier, owner, Status, `CMDB Servers` = cmdb_count, `Monitored` = dt_count, `Gap`, `Coverage %`, `Active Problems`, `Critical Vulns`, `Signal Health`
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 5000
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 10000
+      title: "📊 Application Inventory (Click Row to Drill)"
+      type: data
+      visualization: table
+      visualizationSettings:
+        table:
+          sortBy:
+            - columnId: '["Gap"]'
+              direction: descending
+    "5":
+      content: |-
+        ---
+        ## 🖥️ Infrastructure & Coverage (CMDB vs Dynatrace Reality)
+      type: markdown
+    "6":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        load "/lookups/cmdb_businessapp"
+        | fields app_key = cmdb_ci_key, `Application` = name
+        | lookup [
+            load "/lookups/cmdb_server"
+            | fields app_key = busapp_cmdb_ci_key, `Server` = name, Location = location
+          ], sourceField:app_key, lookupField:app_key, fields:{`Server`, Location}
+        | filter isNotNull(`Server`)
+        | fields `Application`, `Server`, Location
+        | sort `Server` asc
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 5000
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 10000
+      title: "CMDB Servers (What We Think We Should Monitor)"
+      type: data
+      visualization: table
+      visualizationSettings: {}
+    "7":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        load "/lookups/cmdb_businessapp"
+        | fields app_key = cmdb_ci_key, `Application` = name
+        | lookup [
+            load "/lookups/cmdb_server"
+            | fields app_key = busapp_cmdb_ci_key, server_name = lower(name)
+            | lookup [
+                fetch dt.entity.host
+                | fields id, entity.name, monitoringMode, paasVendorType, isMonitoringCandidate
+                | fieldsAdd monitoringMode = if(isNotNull(paasVendorType), then:"APP_ONLY", else:if(isMonitoringCandidate == true, then:"CANDIDATE", else:monitoringMode))
+                | parse entity.name, """LD:hostname ('.' LD:domain)? EOS"""
+                | fieldsAdd server_name = lower(hostname)
+              ], sourceField:server_name, lookupField:server_name, fields:{monitoringMode}
+          ], sourceField:app_key, lookupField:app_key, fields:{server_name, monitoringMode}
+        | fieldsAdd monitoringMode = coalesce(monitoringMode, "Not Monitored")
+        | filter monitoringMode != "Not Monitored"
+        | fields `Application`, `Server` = server_name, `Monitoring Mode` = monitoringMode
+        | sort `Server` asc
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 5000
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 10000
+      title: "Dynatrace Monitored (What We Actually See)"
+      type: data
+      visualization: table
+      visualizationSettings: {}
+    "8":
+      content: |-
+        ---
+        ## 📊 Observability Evidence
+      type: markdown
+    "9":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        load "/lookups/cmdb_businessapp"
+        | fields app_key = cmdb_ci_key, `Application` = name
+        | fieldsAdd has_telemetry = 0
+        | summarize `Traces %` = 0, `Metrics %` = 0, `Logs %` = 0, by:{`Application`}
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 5000
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 10000
+      title: "Signal Quality Summary"
+      type: data
+      visualization: table
+      visualizationSettings: {}
+    "10":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        load "/lookups/cmdb_businessapp"
+        | fields app_key = cmdb_ci_key, `Application` = name
+        | lookup [
+            load "/lookups/cmdb_server"
+            | fields app_key = busapp_cmdb_ci_key, `Server` = name
+          ], sourceField:app_key, lookupField:app_key, fields:{`Server`}
+        | filter isNotNull(`Server`)
+        | fieldsAdd Traces = "❌", Metrics = "❌", Logs = "❌"
+        | fields `Application`, `Server`, Traces, Metrics, Logs
+        | sort `Server` asc
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 5000
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 10000
+      title: "Observability Evidence by Server"
+      type: data
+      visualization: table
+      visualizationSettings: {}
+    "11":
+      content: |-
+        ---
+        ## 🚨 Problems & Alerts
+      type: markdown
+    "12":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        fetch dt.entity.host
+        | fieldsAdd host_name = entity.name
+        | lookup [load "/lookups/cmdb_server"], sourceField:host_name, lookupField:fully_qualified_domain_name, fields:{busapp_key = busapp_cmdb_ci_key}
+        | filter isNotNull(busapp_key)
+        | lookup [load "/lookups/cmdb_businessapp"], sourceField:busapp_key, lookupField:cmdb_ci_key, fields:{app_name = name}
+        | filter isNotNull(app_name)
+        | lookup [fetch events, from:now()-30d | filter event.kind == "DAVIS_PROBLEM" AND event.status == "ACTIVE" | expand affected_entity_id = affected_entity_ids | filter matchesPhrase(affected_entity_id, "HOST-") | summarize `Active Problems` = countDistinct(event.id), by:{host_id = affected_entity_id}], sourceField:id, lookupField:host_id, fields:{`Active Problems`}
+        | filter isNotNull(`Active Problems`)
+        | summarize `Active Problems` = sum(`Active Problems`), by:{`Application` = app_name}
+        | sort `Active Problems` desc
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 1
+        maxResultRecords: 1000
+      title: "Active Problems"
+      type: data
+      visualization: table
+      visualizationSettings: {}
+    "13":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        fetch dt.entity.host
+        | fieldsAdd host_name = entity.name
+        | lookup [load "/lookups/cmdb_server"], sourceField:host_name, lookupField:fully_qualified_domain_name, fields:{busapp_key = busapp_cmdb_ci_key}
+        | filter isNotNull(busapp_key)
+        | lookup [load "/lookups/cmdb_businessapp"], sourceField:busapp_key, lookupField:cmdb_ci_key, fields:{app_name = name}
+        | filter isNotNull(app_name)
+        | lookup [fetch events, from:now()-30d | filter event.kind == "DAVIS_PROBLEM" | expand affected_entity_id = affected_entity_ids | filter matchesPhrase(affected_entity_id, "HOST-") | summarize `Total Problems` = countDistinct(event.id), by:{host_id = affected_entity_id}], sourceField:id, lookupField:host_id, fields:{`Total Problems`}
+        | filter isNotNull(`Total Problems`)
+        | summarize `Total Problems` = sum(`Total Problems`), by:{`Application` = app_name}
+        | sort `Total Problems` desc
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 1
+        maxResultRecords: 1000
+      title: "Total Problems (Last 30 Days)"
+      type: data
+      visualization: table
+      visualizationSettings: {}
+    "14":
+      content: |-
+        ---
+        ## 🔒 Security
+      type: markdown
+    "15":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        load "/lookups/cmdb_businessapp"
+        | fields app_key = cmdb_ci_key, `Application` = name
+        | lookup [
+            load "/lookups/cmdb_server"
+            | fields app_key = busapp_cmdb_ci_key, server_name = lower(name)
+            | lookup [
+                fetch dt.entity.host
+                | fields id, entity.name
+                | parse entity.name, """LD:hostname ('.' LD:domain)? EOS"""
+                | fieldsAdd server_name = lower(hostname)
+                | fields id, server_name
+              ], sourceField:server_name, lookupField:server_name, fields:{id}
+          ], sourceField:app_key, lookupField:app_key, fields:{server_name, id}
+        | lookup [
+            fetch dt.entity.vulnerability
+            | summarize critical_count = countDistinct(if(severity == "CRITICAL", display_id)), high_count = countDistinct(if(severity == "HIGH", display_id)), by:{host_id = dt.entity.host}
+          ], sourceField:id, lookupField:host_id, fields:{critical_count, high_count}
+        | fieldsAdd
+            critical_count = coalesce(critical_count, 0),
+            high_count = coalesce(high_count, 0),
+            total_vulns = critical_count + high_count
+        | filter total_vulns > 0
+        | fields `Application`, `Hostname` = server_name, Critical = critical_count, High = high_count, `Total Vulns` = total_vulns
+        | sort Critical desc, High desc, `Hostname` asc
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 5000
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 10000
+      title: "Vulnerabilities (Critical & High)"
+      type: data
+      visualization: table
+      visualizationSettings:
+        table:
+          thresholds:
+            - field: Critical
+              isEnabled: true
+              rules:
+                - color:
+                    Default: '#c62239'
+                  comparator: '>'
+                  value: 0
+            - field: High
+              isEnabled: true
+              rules:
+                - color:
+                    Default: '#f57c00'
+                  comparator: '>'
+                  value: 0
+    "16":
+      content: |-
+        ---
+        ## 🚀 Deployment
+      type: markdown
+    "17":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        load "/lookups/cmdb_businessapp"
+        | fields app_key = cmdb_ci_key, `Application` = name
+        | lookup [
+            load "/lookups/cmdb_server"
+            | fields app_key = busapp_cmdb_ci_key, server_name = lower(name)
+            | lookup [
+                fetch dt.entity.host
+                | fields id, entity.name, installerVersion
+                | parse entity.name, """LD:hostname ('.' LD:domain)? EOS"""
+                | fieldsAdd server_name = lower(hostname)
+                | fieldsAdd baseline_join = 1
+                | lookup [
+                    fetch events
+                    | filter startsWith(event.name, "OneAgentBaseline|")
+                    | sort timestamp desc
+                    | limit 1
+                    | fieldsAdd parts = splitString(event.name, "|")
+                    | fieldsAdd latest_version_str = arrayElement(parts, 1), oldest_supported_str = arrayElement(parts, 2)
+                    | fieldsAdd latest_sprint = toLong(arrayElement(splitString(latest_version_str, "."), 1)), oldest_sprint = toLong(arrayElement(splitString(oldest_supported_str, "."), 1))
+                    | fieldsAdd baseline_join = 1
+                    | fields baseline_join, latest_sprint, oldest_sprint
+                  ], sourceField:baseline_join, lookupField:baseline_join, fields:{latest_sprint, oldest_sprint}
+                | fieldsAdd current_sprint = toLong(arrayElement(splitString(installerVersion, "."), 1)), version_status = if(current_sprint == latest_sprint, then:"Current ✅", else:if(current_sprint < oldest_sprint, then:"Unsupported ❌", else:"Outdated ⚠️")), agent_version = coalesce(installerVersion, "Unknown")
+                | fields server_name, agent_version, version_status
+              ], sourceField:server_name, lookupField:server_name, fields:{agent_version, version_status}
+          ], sourceField:app_key, lookupField:app_key, fields:{server_name, agent_version, version_status}
+        | fields `Application`, `Hostname` = server_name, `OneAgent Version` = agent_version, `Version Status` = version_status
+        | sort `Hostname` asc
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 5000
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 10000
+      title: "OneAgent Deployment Status"
+      type: data
+      visualization: table
+      visualizationSettings:
+        table:
+          thresholds:
+            - field: Version Status
+              isEnabled: true
+              rules:
+                - color:
+                    Default: '#2f6862'
+                  comparator: contains
+                  value: Current
+                - color:
+                    Default: '#c62239'
+                  comparator: contains
+                  value: Unsupported
+                - color:
+                    Default: '#ffd966'
+                  comparator: contains
+                  value: Outdated
+  variables: []
+  version: 21
+isPrivate: false
+modificationInfo:
+  createdTime: 2026-05-17T02:00:00.000Z
+  lastModifiedTime: 2026-05-17T02:00:00.000Z
+name: Observability Health Dashboard v9
+owner: b9e9bf8e-04b6-4e36-b150-f5682599a21e
+type: dashboard
+version: 1

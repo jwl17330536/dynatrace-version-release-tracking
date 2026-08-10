@@ -1,0 +1,145 @@
+name: Release Tracking Validation
+
+on:
+  pull_request:
+    paths:
+      - "workflows/**"
+      - "field-asset-library/dashboards/platform/release-tracking-dashboard/**"
+      - "scripts/**"
+      - "docs/OPERATING.md"
+      - "README.md"
+      - ".github/workflows/release-tracking-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "workflows/**"
+      - "field-asset-library/dashboards/platform/release-tracking-dashboard/**"
+      - "scripts/**"
+      - "docs/OPERATING.md"
+      - "README.md"
+      - ".github/workflows/release-tracking-validation.yml"
+  workflow_dispatch:
+    inputs:
+      run_live_v5:
+        description: "Also run live v5 profile checks using dtctl + tenant secrets"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-tracking-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-validation:
+    name: Static Validation (CI-safe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run ci-static profile
+        run: |
+          set -euo pipefail
+          mkdir -p reports/validation
+          python3 scripts/run_validation_suite.py --profile ci-static --json | tee reports/validation/ci-static.latest.json
+
+      - name: Add static summary
+        if: always()
+        run: |
+          python3 scripts/write_validation_summary.py \
+            --report-path reports/validation/ci-static.latest.json \
+            --title "Static Validation Summary"
+
+      - name: Upload static validation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-tracking-ci-static
+          path: reports/validation/
+          if-no-files-found: warn
+          retention-days: 14
+
+  live-v5-validation:
+    name: Live V5 Validation (manual)
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_live_v5 == 'true' }}
+    needs:
+      - static-validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DT_ENVIRONMENT: ${{ secrets.DT_ENVIRONMENT }}
+      DT_API_TOKEN: ${{ secrets.DT_API_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install dtctl
+        run: |
+          set -euo pipefail
+          go install github.com/dynatrace-oss/dtctl/cmd/dtctl@v0.25.2
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+          "$HOME/go/bin/dtctl" version --plain
+
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          if [[ -z "${DT_ENVIRONMENT:-}" || -z "${DT_API_TOKEN:-}" ]]; then
+            echo "::error::Missing required secrets DT_ENVIRONMENT and/or DT_API_TOKEN"
+            exit 1
+          fi
+
+      - name: Configure dtctl context
+        run: |
+          set -euo pipefail
+          dtctl config set-credentials ci-token --token "$DT_API_TOKEN"
+          dtctl config set-context ci \
+            --environment "$DT_ENVIRONMENT" \
+            --token-ref ci-token \
+            --safety-level readonly
+          dtctl config use-context ci
+          dtctl doctor --plain
+
+      - name: Run v5 live profile
+        run: |
+          set -euo pipefail
+          mkdir -p reports/validation
+          python3 scripts/run_validation_suite.py --profile v5 --json | tee reports/validation/ci-v5-live.latest.json
+
+      - name: Add live summary
+        if: always()
+        run: |
+          python3 scripts/write_validation_summary.py \
+            --report-path reports/validation/ci-v5-live.latest.json \
+            --title "Live V5 Validation Summary"
+
+      - name: Upload live validation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-tracking-ci-v5-live
+          path: reports/validation/
+          if-no-files-found: warn
+          retention-days: 14

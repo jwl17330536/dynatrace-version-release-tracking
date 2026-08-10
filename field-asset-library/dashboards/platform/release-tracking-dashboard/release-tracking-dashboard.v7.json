@@ -1,0 +1,155 @@
+{
+  "name": "Dynatrace Component Release Tracking v7",
+  "type": "dashboard",
+  "isPrivate": false,
+  "content": {
+    "version": 21,
+    "variables": [],
+    "tiles": {
+      "0": {
+        "type": "markdown",
+        "title": "",
+        "content": "# Dynatrace Component Release Tracking v7\nLast updated: pending workflow run"
+      },
+      "1": {
+        "type": "markdown",
+        "title": "",
+        "content": "## Global Summary\nPending workflow update"
+      },
+      "2": {
+        "type": "markdown",
+        "title": "",
+        "content": "## SaaS Current\nPending workflow update"
+      },
+      "3": {
+        "type": "markdown",
+        "title": "",
+        "content": "## SaaS Next Planned\nPending workflow update"
+      },
+      "4": {
+        "type": "markdown",
+        "title": "",
+        "content": "## OneAgent Current\nPending workflow update"
+      },
+      "5": {
+        "type": "markdown",
+        "title": "",
+        "content": "## OneAgent Next Planned\nPending workflow update"
+      },
+      "6": {
+        "type": "markdown",
+        "title": "",
+        "content": "## ActiveGate Current\nPending workflow update"
+      },
+      "7": {
+        "type": "markdown",
+        "title": "",
+        "content": "## ActiveGate Next Planned\nPending workflow update"
+      },
+      "8": {
+        "type": "markdown",
+        "title": "",
+        "content": "## Operator Current\nPending workflow update"
+      },
+      "9": {
+        "type": "markdown",
+        "title": "",
+        "content": "## Operator Next Planned\nPending workflow update"
+      },
+      "10": {
+        "type": "markdown",
+        "title": "",
+        "content": "## EdgeConnect Current\nPending workflow update"
+      },
+      "11": {
+        "type": "markdown",
+        "title": "",
+        "content": "## EdgeConnect Next Planned\nPending workflow update"
+      }
+    },
+    "layout": {
+      "tiles": {
+        "0": {
+          "x": 0,
+          "y": 0,
+          "w": 20,
+          "h": 3
+        },
+        "1": {
+          "x": 0,
+          "y": 3,
+          "w": 20,
+          "h": 4
+        },
+        "2": {
+          "x": 0,
+          "y": 7,
+          "w": 10,
+          "h": 9
+        },
+        "3": {
+          "x": 10,
+          "y": 7,
+          "w": 10,
+          "h": 9
+        },
+        "4": {
+          "x": 0,
+          "y": 16,
+          "w": 10,
+          "h": 9
+        },
+        "5": {
+          "x": 10,
+          "y": 16,
+          "w": 10,
+          "h": 9
+        },
+        "6": {
+          "x": 0,
+          "y": 25,
+          "w": 10,
+          "h": 9
+        },
+        "7": {
+          "x": 10,
+          "y": 25,
+          "w": 10,
+          "h": 9
+        },
+        "8": {
+          "x": 0,
+          "y": 34,
+          "w": 10,
+          "h": 9
+        },
+        "9": {
+          "x": 10,
+          "y": 34,
+          "w": 10,
+          "h": 9
+        },
+        "10": {
+          "x": 0,
+          "y": 43,
+          "w": 10,
+          "h": 9
+        },
+        "11": {
+          "x": 10,
+          "y": 43,
+          "w": 10,
+          "h": 9
+        }
+      },
+      "settings": {
+        "gridLayout": {
+          "mode": "responsive",
+          "columnsCount": 20
+        }
+      },
+      "annotations": []
+    }
+  },
+  "id": "ca0423a7-f854-4358-8861-3eb59a65b94e"
+}

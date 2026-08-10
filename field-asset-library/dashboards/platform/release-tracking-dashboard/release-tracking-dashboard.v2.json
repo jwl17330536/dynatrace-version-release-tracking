@@ -1,0 +1,224 @@
+{
+  "name": "Dynatrace Component Release Tracking v2",
+  "type": "dashboard",
+  "content": {
+    "version": 21,
+    "tiles": {
+      "0": {
+        "type": "markdown",
+        "title": "",
+        "content": "# Dynatrace Component Release Tracking v2\n\nA customer-ready release intelligence dashboard with SaaS-first visibility and component sections for OneAgent, ActiveGate, Operator, and EdgeConnect.\n\n## What this dashboard answers\n- What version is SaaS currently running?\n- What is latest versus next-planned by component?\n- What runtime versions are currently observed?\n- Are sources healthy or degraded?\n- What AI summary is available for the latest release rows?"
+      },
+      "1": {
+        "type": "data",
+        "title": "SaaS Current Runtime Version",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"saas\" | sort observed_at desc | limit 1 | fields observed_version, observed_at, source_status",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "2": {
+        "type": "data",
+        "title": "SaaS Release Rows (Latest and Next)",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"saas\" | fields released_version, is_latest, is_next_planned, release_url, source_status = release_status, fetched_at | sort is_latest desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "3": {
+        "type": "data",
+        "title": "Release Freshness",
+        "query": "load \"/lookups/dt_component_release_status\" | summarize latest_release_fetch = max(fetched_at), release_rows = count()",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "4": {
+        "type": "data",
+        "title": "Runtime Freshness",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | summarize latest_runtime_observed = max(observed_at), runtime_rows = count()",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "5": {
+        "type": "markdown",
+        "title": "",
+        "content": "## OneAgent\n\nLatest and next release rows, current runtime distribution, and AI summary for OneAgent."
+      },
+      "6": {
+        "type": "data",
+        "title": "OneAgent Release",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"oneagent\" | fields released_version, is_latest, is_next_planned, release_url, source_status = release_status, fetched_at | sort is_latest desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "7": {
+        "type": "data",
+        "title": "OneAgent Runtime",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"oneagent\" | fields observed_version, running_count, source_type, source_status, observed_at, collection_message | sort observed_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "8": {
+        "type": "data",
+        "title": "OneAgent Breaking and AI Summary",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"oneagent\" and is_latest == \"true\" | fieldsAdd breaking_changes = if(breaking_changes_summary == \"-\" or breaking_changes_summary == \"\", \"No breaking changes extracted yet.\", else: breaking_changes_summary), ai_highlights = if(highlights_summary == \"-\" or highlights_summary == \"\", \"No AI highlights extracted yet.\", else: highlights_summary) | fields released_version, breaking_changes, ai_highlights, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "9": {
+        "type": "markdown",
+        "title": "",
+        "content": "## ActiveGate\n\nLatest and next release rows, runtime versions, and AI summary for ActiveGate."
+      },
+      "10": {
+        "type": "data",
+        "title": "ActiveGate Release",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"activegate\" | fields released_version, is_latest, is_next_planned, release_url, source_status = release_status, fetched_at | sort is_latest desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "11": {
+        "type": "data",
+        "title": "ActiveGate Runtime",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"activegate\" | fields observed_version, running_count, source_type, source_status, observed_at, collection_message | sort observed_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "12": {
+        "type": "data",
+        "title": "ActiveGate Breaking and AI Summary",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"activegate\" and is_latest == \"true\" | fieldsAdd breaking_changes = if(breaking_changes_summary == \"-\" or breaking_changes_summary == \"\", \"No breaking changes extracted yet.\", else: breaking_changes_summary), ai_highlights = if(highlights_summary == \"-\" or highlights_summary == \"\", \"No AI highlights extracted yet.\", else: highlights_summary) | fields released_version, breaking_changes, ai_highlights, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "13": {
+        "type": "markdown",
+        "title": "",
+        "content": "## Operator\n\nLatest and next release rows, runtime status, and AI summary for Operator."
+      },
+      "14": {
+        "type": "data",
+        "title": "Operator Release",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"operator\" | fields released_version, is_latest, is_next_planned, release_url, source_status = release_status, fetched_at | sort is_latest desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "15": {
+        "type": "data",
+        "title": "Operator Runtime",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"operator\" | fields observed_version, running_count, source_type, source_status, observed_at, collection_message | sort observed_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "16": {
+        "type": "data",
+        "title": "Operator Breaking and AI Summary",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"operator\" and is_latest == \"true\" | fieldsAdd breaking_changes = if(breaking_changes_summary == \"-\" or breaking_changes_summary == \"\", \"No breaking changes extracted yet.\", else: breaking_changes_summary), ai_highlights = if(highlights_summary == \"-\" or highlights_summary == \"\", \"No AI highlights extracted yet.\", else: highlights_summary) | fields released_version, breaking_changes, ai_highlights, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "17": {
+        "type": "markdown",
+        "title": "",
+        "content": "## EdgeConnect\n\nLatest and next release rows, runtime status, and AI summary for EdgeConnect."
+      },
+      "18": {
+        "type": "data",
+        "title": "EdgeConnect Release",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"edgeconnect\" | fields released_version, is_latest, is_next_planned, release_url, source_status = release_status, fetched_at | sort is_latest desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "19": {
+        "type": "data",
+        "title": "EdgeConnect Runtime",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"edgeconnect\" | fields observed_version, running_count, source_type, source_status, observed_at, collection_message | sort observed_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "20": {
+        "type": "data",
+        "title": "EdgeConnect Breaking and AI Summary",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"edgeconnect\" and is_latest == \"true\" | fieldsAdd breaking_changes = if(breaking_changes_summary == \"-\" or breaking_changes_summary == \"\", \"No breaking changes extracted yet.\", else: breaking_changes_summary), ai_highlights = if(highlights_summary == \"-\" or highlights_summary == \"\", \"No AI highlights extracted yet.\", else: highlights_summary) | fields released_version, breaking_changes, ai_highlights, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      },
+      "21": {
+        "type": "markdown",
+        "title": "",
+        "content": "## Source Health\n\nUse this table to confirm ingestion health by component and quickly identify unavailable or not-configured sources."
+      },
+      "22": {
+        "type": "data",
+        "title": "Runtime Source Health by Component",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | summarize rows = count(), by: { component, source_status } | sort component asc, source_status asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        }
+      }
+    },
+    "layouts": {
+      "0": { "x": 0, "y": 0, "w": 20, "h": 4 },
+      "1": { "x": 0, "y": 4, "w": 6, "h": 4 },
+      "2": { "x": 6, "y": 4, "w": 14, "h": 4 },
+      "3": { "x": 0, "y": 8, "w": 10, "h": 4 },
+      "4": { "x": 10, "y": 8, "w": 10, "h": 4 },
+      "5": { "x": 0, "y": 12, "w": 20, "h": 2 },
+      "6": { "x": 0, "y": 14, "w": 7, "h": 6 },
+      "7": { "x": 7, "y": 14, "w": 7, "h": 6 },
+      "8": { "x": 14, "y": 14, "w": 6, "h": 6 },
+      "9": { "x": 0, "y": 20, "w": 20, "h": 2 },
+      "10": { "x": 0, "y": 22, "w": 7, "h": 6 },
+      "11": { "x": 7, "y": 22, "w": 7, "h": 6 },
+      "12": { "x": 14, "y": 22, "w": 6, "h": 6 },
+      "13": { "x": 0, "y": 28, "w": 20, "h": 2 },
+      "14": { "x": 0, "y": 30, "w": 7, "h": 6 },
+      "15": { "x": 7, "y": 30, "w": 7, "h": 6 },
+      "16": { "x": 14, "y": 30, "w": 6, "h": 6 },
+      "17": { "x": 0, "y": 36, "w": 20, "h": 2 },
+      "18": { "x": 0, "y": 38, "w": 7, "h": 6 },
+      "19": { "x": 7, "y": 38, "w": 7, "h": 6 },
+      "20": { "x": 14, "y": 38, "w": 6, "h": 6 },
+      "21": { "x": 0, "y": 44, "w": 20, "h": 2 },
+      "22": { "x": 0, "y": 46, "w": 20, "h": 6 }
+    },
+    "variables": [],
+    "settings": {
+      "gridLayout": {
+        "mode": "responsive",
+        "columnsCount": 20
+      }
+    }
+  }
+}

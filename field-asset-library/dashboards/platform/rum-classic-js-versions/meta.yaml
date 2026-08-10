@@ -1,0 +1,20 @@
+title: "RUM Classic JS Versions"
+description: >
+  Shows latest RUM Classic JavaScript library versions per application and run summary metrics.
+purpose: >
+  When teams need to validate RUM classic instrumentation consistency across applications, this dashboard exposes latest JS library versions and sync status so gaps are detected before they impact user monitoring.
+author: "John Lindley"
+contact: "john.lindley@dynatrace.com"
+asset_type: dashboard
+use_case: platform
+deployment:
+  - SaaS
+tags:
+  - DynatraceAdmin
+  - AIOperations
+setup_instructions: >
+  Import the dashboard JSON into Dynatrace, verify data sources and workflow dependencies,
+  and validate tiles in a live tenant before sharing.
+tenant_url: "<TENANT_DASHBOARD_URL>"
+related_assets:
+  - workflows/version-intelligence-sync.v5.workflow.json

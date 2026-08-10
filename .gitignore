@@ -1,0 +1,15 @@
+# Generated validation artifacts
+reports/validation/
+reports/
+
+# Local temporary build/scratch artifacts
+.tmp/
+.tmp_*
+
+# Local editor/runtime artifacts
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+venv/

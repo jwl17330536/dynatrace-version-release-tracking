@@ -1,0 +1,751 @@
+{
+  "name": "Dynatrace Component Release Tracking v5",
+  "type": "dashboard",
+  "owner": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "isPrivate": false,
+  "version": 46,
+  "modificationInfo": {
+    "createdBy": "",
+    "createdTime": "2026-08-06T10:53:16.491Z",
+    "lastModifiedBy": "",
+    "lastModifiedTime": "2026-08-06T12:56:59.979Z"
+  },
+  "content": {
+    "version": 21,
+    "variables": [],
+    "tiles": {
+      "0": {
+        "title": "Global Action Required Components",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | summarize runtime_issue = countIf(source_status != \"current\"), by: { component } | join [ load \"/lookups/dt_component_release_status\" | filter is_latest == \"true\" | summarize upgrade_issue = countIf(is_newer_than_running == \"true\"), by: { component } ], on: { component } | fieldsAdd upgrade_issue = right.upgrade_issue | summarize action_required = countIf(runtime_issue > 0 or upgrade_issue > 0)",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "1": {
+        "type": "markdown",
+        "content": "## SaaS\nAdmin read order: breaking to plan for -> what is coming -> value -> action -> release link",
+        "title": ""
+      },
+      "2": {
+        "title": "SaaS Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"saas\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"🟢 current\", else: if(source_status == \"partial\", \"🟠 partial\", else: if(source_status == \"not_configured\", \"🟠 not configured\", else: \"🔴 unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "3": {
+        "title": "SaaS Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"saas\"\n| fields released_version, release_status, is_latest, is_next_planned, running_version, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, fetched_at\n| fieldsAdd coming_next = if(is_next_planned == \"true\", \"yes\", else: \"no\"), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", \"⚠ possible\", else: \"none\"), release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), release_snapshot_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections)\n| fieldsAdd release_snapshot = if(stringLength(release_snapshot_raw) > 320, concat(substring(release_snapshot_raw, from: 0, to: 320), \"...\"), else: release_snapshot_raw)\n| fields released_version, release_status, is_latest, is_next_planned, running_version, coming_next, breaking_now, release_snapshot, release_link, release_notes_url, fetched_at\n| sort is_latest desc, is_next_planned desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"release_url\"]": 493.79
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "4": {
+        "title": "SaaS Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"saas\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"saas\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields component, running_version, latest_published = released_version, is_newer_than_running, risk_priority, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), action = if(is_newer_than_running == \"true\", \"🔴 newer available\", else: if(running_version == \"\" or running_version == \"-\", \"🟠 runtime unknown\", else: \"🟢 aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint)))\n| fieldsAdd current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", current_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| sort action_priority asc\n| fields running_version, latest_published, action, risk_priority, breaking_now, coming_next, current_breaking, recommended_action, admin_brief, release_link, release_notes_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"action\"]": 150,
+              "[\"running_version\"]": 170,
+              "[\"latest_published\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1000,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "5": {
+        "title": "SaaS Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"saas\" and is_latest == \"true\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"saas\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields release_version = released_version, risk_text = if(risk_markdown == \"\" or risk_markdown == \"-\", breaking_changes_summary, else: risk_markdown), highlight_text = if(highlights_markdown == \"\" or highlights_markdown == \"-\", highlights_summary, else: highlights_markdown), risk_priority, highlight_focus, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, synced_at = fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), triage = if(risk_priority == \"\" or risk_priority == \"-\", if(contains(lower(risk_text), \"critical\") or contains(lower(risk_text), \"high\") or contains(lower(risk_text), \"breaking\"), \"🔴 high\", else: if(contains(lower(risk_text), \"medium\") or contains(lower(risk_text), \"warning\"), \"🟠 medium\", else: if(risk_text == \"\" or risk_text == \"-\", \"🟢 none\", else: \"🟡 review\"))), else: risk_priority), risk_summary_raw = if(risk_text == \"\" or risk_text == \"-\", \"No notable risk listed\", else: risk_text), highlight_summary_raw = if(highlight_focus != \"\" and highlight_focus != \"-\", highlight_focus, else: if(highlight_text == \"\" or highlight_text == \"-\", \"No notable highlights listed\", else: highlight_text)), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint))), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections)\n| fieldsAdd risk_summary = if(stringLength(risk_summary_raw) > 320, concat(substring(risk_summary_raw, from: 0, to: 320), \"...\"), else: risk_summary_raw), highlight_summary = if(stringLength(highlight_summary_raw) > 320, concat(substring(highlight_summary_raw, from: 0, to: 320), \"...\"), else: highlight_summary_raw), current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", highlight_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| fields release_version, triage, breaking_now, coming_next, current_breaking, risk_summary, highlight_summary, recommended_action, admin_brief, release_link, release_notes_url, synced_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"triage\"]": 110,
+              "[\"release_version\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1100,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "6": {
+        "type": "markdown",
+        "content": "## ActiveGate\nAdmin read order: breaking to plan for -> what is coming -> value -> action -> release link",
+        "title": ""
+      },
+      "7": {
+        "title": "ActiveGate Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"activegate\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"🟢 current\", else: if(source_status == \"partial\", \"🟠 partial\", else: if(source_status == \"not_configured\", \"🟠 not configured\", else: \"🔴 unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "8": {
+        "title": "ActiveGate Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"activegate\"\n| fields released_version, release_status, is_latest, is_next_planned, running_version, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, fetched_at\n| fieldsAdd coming_next = if(is_next_planned == \"true\", \"yes\", else: \"no\"), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", \"⚠ possible\", else: \"none\"), release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), release_snapshot_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections)\n| fieldsAdd release_snapshot = if(stringLength(release_snapshot_raw) > 320, concat(substring(release_snapshot_raw, from: 0, to: 320), \"...\"), else: release_snapshot_raw)\n| fields released_version, release_status, is_latest, is_next_planned, running_version, coming_next, breaking_now, release_snapshot, release_link, release_notes_url, fetched_at\n| sort is_latest desc, is_next_planned desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "9": {
+        "title": "ActiveGate Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"activegate\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"activegate\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields component, running_version, latest_published = released_version, is_newer_than_running, risk_priority, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), action = if(is_newer_than_running == \"true\", \"🔴 newer available\", else: if(running_version == \"\" or running_version == \"-\", \"🟠 runtime unknown\", else: \"🟢 aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint)))\n| fieldsAdd current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", current_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| sort action_priority asc\n| fields running_version, latest_published, action, risk_priority, breaking_now, coming_next, current_breaking, recommended_action, admin_brief, release_link, release_notes_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"action\"]": 150,
+              "[\"running_version\"]": 170,
+              "[\"latest_published\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1000,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "10": {
+        "title": "ActiveGate Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"activegate\" and is_latest == \"true\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"activegate\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields release_version = released_version, risk_text = if(risk_markdown == \"\" or risk_markdown == \"-\", breaking_changes_summary, else: risk_markdown), highlight_text = if(highlights_markdown == \"\" or highlights_markdown == \"-\", highlights_summary, else: highlights_markdown), risk_priority, highlight_focus, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, synced_at = fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), triage = if(risk_priority == \"\" or risk_priority == \"-\", if(contains(lower(risk_text), \"critical\") or contains(lower(risk_text), \"high\") or contains(lower(risk_text), \"breaking\"), \"🔴 high\", else: if(contains(lower(risk_text), \"medium\") or contains(lower(risk_text), \"warning\"), \"🟠 medium\", else: if(risk_text == \"\" or risk_text == \"-\", \"🟢 none\", else: \"🟡 review\"))), else: risk_priority), risk_summary_raw = if(risk_text == \"\" or risk_text == \"-\", \"No notable risk listed\", else: risk_text), highlight_summary_raw = if(highlight_focus != \"\" and highlight_focus != \"-\", highlight_focus, else: if(highlight_text == \"\" or highlight_text == \"-\", \"No notable highlights listed\", else: highlight_text)), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint))), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections)\n| fieldsAdd risk_summary = if(stringLength(risk_summary_raw) > 320, concat(substring(risk_summary_raw, from: 0, to: 320), \"...\"), else: risk_summary_raw), highlight_summary = if(stringLength(highlight_summary_raw) > 320, concat(substring(highlight_summary_raw, from: 0, to: 320), \"...\"), else: highlight_summary_raw), current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", highlight_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| fields release_version, triage, breaking_now, coming_next, current_breaking, risk_summary, highlight_summary, recommended_action, admin_brief, release_link, release_notes_url, synced_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"triage\"]": 110,
+              "[\"release_version\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1100,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "11": {
+        "type": "markdown",
+        "content": "## OneAgent\nAdmin read order: breaking to plan for -> what is coming -> value -> action -> release link",
+        "title": ""
+      },
+      "12": {
+        "title": "OneAgent Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"oneagent\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"🟢 current\", else: if(source_status == \"partial\", \"🟠 partial\", else: if(source_status == \"not_configured\", \"🟠 not configured\", else: \"🔴 unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "13": {
+        "title": "OneAgent Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"oneagent\"\n| fields released_version, release_status, is_latest, is_next_planned, running_version, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, fetched_at\n| fieldsAdd coming_next = if(is_next_planned == \"true\", \"yes\", else: \"no\"), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", \"⚠ possible\", else: \"none\"), release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), release_snapshot_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections)\n| fieldsAdd release_snapshot = if(stringLength(release_snapshot_raw) > 320, concat(substring(release_snapshot_raw, from: 0, to: 320), \"...\"), else: release_snapshot_raw)\n| fields released_version, release_status, is_latest, is_next_planned, running_version, coming_next, breaking_now, release_snapshot, release_link, release_notes_url, fetched_at\n| sort is_latest desc, is_next_planned desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "14": {
+        "title": "OneAgent Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"oneagent\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"oneagent\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields component, running_version, latest_published = released_version, is_newer_than_running, risk_priority, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), action = if(is_newer_than_running == \"true\", \"🔴 newer available\", else: if(running_version == \"\" or running_version == \"-\", \"🟠 runtime unknown\", else: \"🟢 aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint)))\n| fieldsAdd current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", current_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| sort action_priority asc\n| fields running_version, latest_published, action, risk_priority, breaking_now, coming_next, current_breaking, recommended_action, admin_brief, release_link, release_notes_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"action\"]": 150,
+              "[\"running_version\"]": 170,
+              "[\"latest_published\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1000,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "15": {
+        "title": "OneAgent Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"oneagent\" and is_latest == \"true\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"oneagent\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields release_version = released_version, risk_text = if(risk_markdown == \"\" or risk_markdown == \"-\", breaking_changes_summary, else: risk_markdown), highlight_text = if(highlights_markdown == \"\" or highlights_markdown == \"-\", highlights_summary, else: highlights_markdown), risk_priority, highlight_focus, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, synced_at = fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), triage = if(risk_priority == \"\" or risk_priority == \"-\", if(contains(lower(risk_text), \"critical\") or contains(lower(risk_text), \"high\") or contains(lower(risk_text), \"breaking\"), \"🔴 high\", else: if(contains(lower(risk_text), \"medium\") or contains(lower(risk_text), \"warning\"), \"🟠 medium\", else: if(risk_text == \"\" or risk_text == \"-\", \"🟢 none\", else: \"🟡 review\"))), else: risk_priority), risk_summary_raw = if(risk_text == \"\" or risk_text == \"-\", \"No notable risk listed\", else: risk_text), highlight_summary_raw = if(highlight_focus != \"\" and highlight_focus != \"-\", highlight_focus, else: if(highlight_text == \"\" or highlight_text == \"-\", \"No notable highlights listed\", else: highlight_text)), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint))), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections)\n| fieldsAdd risk_summary = if(stringLength(risk_summary_raw) > 320, concat(substring(risk_summary_raw, from: 0, to: 320), \"...\"), else: risk_summary_raw), highlight_summary = if(stringLength(highlight_summary_raw) > 320, concat(substring(highlight_summary_raw, from: 0, to: 320), \"...\"), else: highlight_summary_raw), current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", highlight_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| fields release_version, triage, breaking_now, coming_next, current_breaking, risk_summary, highlight_summary, recommended_action, admin_brief, release_link, release_notes_url, synced_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"triage\"]": 110,
+              "[\"release_version\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1100,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "16": {
+        "type": "markdown",
+        "content": "## Operator\nAdmin read order: breaking to plan for -> what is coming -> value -> action -> release link",
+        "title": ""
+      },
+      "17": {
+        "title": "Operator Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"operator\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"🟢 current\", else: if(source_status == \"partial\", \"🟠 partial\", else: if(source_status == \"not_configured\", \"🟠 not configured\", else: \"🔴 unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "18": {
+        "title": "Operator Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"operator\"\n| fields released_version, release_status, is_latest, is_next_planned, running_version, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, fetched_at\n| fieldsAdd coming_next = if(is_next_planned == \"true\", \"yes\", else: \"no\"), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", \"⚠ possible\", else: \"none\"), release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), release_snapshot_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections)\n| fieldsAdd release_snapshot = if(stringLength(release_snapshot_raw) > 320, concat(substring(release_snapshot_raw, from: 0, to: 320), \"...\"), else: release_snapshot_raw)\n| fields released_version, release_status, is_latest, is_next_planned, running_version, coming_next, breaking_now, release_snapshot, release_link, release_notes_url, fetched_at\n| sort is_latest desc, is_next_planned desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "19": {
+        "title": "Operator Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"operator\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"operator\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields component, running_version, latest_published = released_version, is_newer_than_running, risk_priority, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), action = if(is_newer_than_running == \"true\", \"🔴 newer available\", else: if(running_version == \"\" or running_version == \"-\", \"🟠 runtime unknown\", else: \"🟢 aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint)))\n| fieldsAdd current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", current_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| sort action_priority asc\n| fields running_version, latest_published, action, risk_priority, breaking_now, coming_next, current_breaking, recommended_action, admin_brief, release_link, release_notes_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"action\"]": 150,
+              "[\"running_version\"]": 170,
+              "[\"latest_published\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1000,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "20": {
+        "title": "Operator Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"operator\" and is_latest == \"true\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"operator\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields release_version = released_version, risk_text = if(risk_markdown == \"\" or risk_markdown == \"-\", breaking_changes_summary, else: risk_markdown), highlight_text = if(highlights_markdown == \"\" or highlights_markdown == \"-\", highlights_summary, else: highlights_markdown), risk_priority, highlight_focus, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, synced_at = fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), triage = if(risk_priority == \"\" or risk_priority == \"-\", if(contains(lower(risk_text), \"critical\") or contains(lower(risk_text), \"high\") or contains(lower(risk_text), \"breaking\"), \"🔴 high\", else: if(contains(lower(risk_text), \"medium\") or contains(lower(risk_text), \"warning\"), \"🟠 medium\", else: if(risk_text == \"\" or risk_text == \"-\", \"🟢 none\", else: \"🟡 review\"))), else: risk_priority), risk_summary_raw = if(risk_text == \"\" or risk_text == \"-\", \"No notable risk listed\", else: risk_text), highlight_summary_raw = if(highlight_focus != \"\" and highlight_focus != \"-\", highlight_focus, else: if(highlight_text == \"\" or highlight_text == \"-\", \"No notable highlights listed\", else: highlight_text)), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint))), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections)\n| fieldsAdd risk_summary = if(stringLength(risk_summary_raw) > 320, concat(substring(risk_summary_raw, from: 0, to: 320), \"...\"), else: risk_summary_raw), highlight_summary = if(stringLength(highlight_summary_raw) > 320, concat(substring(highlight_summary_raw, from: 0, to: 320), \"...\"), else: highlight_summary_raw), current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", highlight_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| fields release_version, triage, breaking_now, coming_next, current_breaking, risk_summary, highlight_summary, recommended_action, admin_brief, release_link, release_notes_url, synced_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"triage\"]": 110,
+              "[\"release_version\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1100,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "21": {
+        "type": "markdown",
+        "content": "## EdgeConnect\nAdmin read order: breaking to plan for -> what is coming -> value -> action -> release link",
+        "title": ""
+      },
+      "22": {
+        "title": "Edge Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"edgeconnect\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"🟢 current\", else: if(source_status == \"partial\", \"🟠 partial\", else: if(source_status == \"not_configured\", \"🟠 not configured\", else: \"🔴 unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "23": {
+        "title": "Edge Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"edgeconnect\"\n| fields released_version, release_status, is_latest, is_next_planned, running_version, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, fetched_at\n| fieldsAdd coming_next = if(is_next_planned == \"true\", \"yes\", else: \"no\"), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", \"⚠ possible\", else: \"none\"), release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), release_snapshot_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections)\n| fieldsAdd release_snapshot = if(stringLength(release_snapshot_raw) > 320, concat(substring(release_snapshot_raw, from: 0, to: 320), \"...\"), else: release_snapshot_raw)\n| fields released_version, release_status, is_latest, is_next_planned, running_version, coming_next, breaking_now, release_snapshot, release_link, release_notes_url, fetched_at\n| sort is_latest desc, is_next_planned desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "24": {
+        "title": "Edge Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"edgeconnect\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"edgeconnect\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields component, running_version, latest_published = released_version, is_newer_than_running, risk_priority, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), action = if(is_newer_than_running == \"true\", \"🔴 newer available\", else: if(running_version == \"\" or running_version == \"-\", \"🟠 runtime unknown\", else: \"🟢 aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint)))\n| fieldsAdd current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", current_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| sort action_priority asc\n| fields running_version, latest_published, action, risk_priority, breaking_now, coming_next, current_breaking, recommended_action, admin_brief, release_link, release_notes_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"action\"]": 150,
+              "[\"running_version\"]": 170,
+              "[\"latest_published\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1000,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "25": {
+        "title": "Edge Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\"\n| filter component == \"edgeconnect\" and is_latest == \"true\"\n| join [\n    load \"/lookups/dt_component_release_status\"\n    | filter component == \"edgeconnect\" and is_next_planned == \"true\"\n    | fields component, upcoming_version = released_version, upcoming_breaking = parsed_breaking_changes, upcoming_feature_sections = parsed_feature_sections, upcoming_raw_summary = raw_release_summary\n  ], on: { component }\n| fields release_version = released_version, risk_text = if(risk_markdown == \"\" or risk_markdown == \"-\", breaking_changes_summary, else: risk_markdown), highlight_text = if(highlights_markdown == \"\" or highlights_markdown == \"-\", highlights_summary, else: highlights_markdown), risk_priority, highlight_focus, action_hint, breaking_changes_summary, parsed_breaking_changes, parsed_feature_sections, raw_release_summary, release_notes_url = release_url, upcoming_version = right.upcoming_version, upcoming_breaking = right.upcoming_breaking, upcoming_feature_sections = right.upcoming_feature_sections, upcoming_raw_summary = right.upcoming_raw_summary, synced_at = fetched_at\n| fieldsAdd release_link = if(release_notes_url != \"\" and release_notes_url != \"-\", concat(\"[Open release](\", release_notes_url, \")\"), else: \"-\"), triage = if(risk_priority == \"\" or risk_priority == \"-\", if(contains(lower(risk_text), \"critical\") or contains(lower(risk_text), \"high\") or contains(lower(risk_text), \"breaking\"), \"🔴 high\", else: if(contains(lower(risk_text), \"medium\") or contains(lower(risk_text), \"warning\"), \"🟠 medium\", else: if(risk_text == \"\" or risk_text == \"-\", \"🟢 none\", else: \"🟡 review\"))), else: risk_priority), risk_summary_raw = if(risk_text == \"\" or risk_text == \"-\", \"No notable risk listed\", else: risk_text), highlight_summary_raw = if(highlight_focus != \"\" and highlight_focus != \"-\", highlight_focus, else: if(highlight_text == \"\" or highlight_text == \"-\", \"No notable highlights listed\", else: highlight_text)), recommended_action_raw = if(action_hint == \"\" or action_hint == \"-\", \"No immediate action\", else: if(contains(lower(action_hint), \"runtime version unknown\"), \"Verify runtime source coverage\", else: if(contains(lower(action_hint), \"no immediate action required\"), \"No immediate action\", else: action_hint))), current_breaking = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\", parsed_breaking_changes, else: if(breaking_changes_summary != \"\" and breaking_changes_summary != \"-\", breaking_changes_summary, else: \"No explicit breaking changes listed\")), breaking_now = if(parsed_breaking_changes != \"\" and parsed_breaking_changes != \"-\" or contains(lower(breaking_changes_summary), \"breaking\"), \"⚠ review\", else: \"none\"), coming_next = if(upcoming_version != \"\" and upcoming_version != \"-\" and upcoming_version != \"Not yet published\", concat(upcoming_version, if(upcoming_breaking != \"\" and upcoming_breaking != \"-\", \" (check breaking notes)\", else: \"\")), else: \"Not published\"), current_summary_raw = if(raw_release_summary != \"\" and raw_release_summary != \"-\", raw_release_summary, else: parsed_feature_sections), upcoming_summary_raw = if(upcoming_raw_summary != \"\" and upcoming_raw_summary != \"-\", upcoming_raw_summary, else: upcoming_feature_sections)\n| fieldsAdd risk_summary = if(stringLength(risk_summary_raw) > 320, concat(substring(risk_summary_raw, from: 0, to: 320), \"...\"), else: risk_summary_raw), highlight_summary = if(stringLength(highlight_summary_raw) > 320, concat(substring(highlight_summary_raw, from: 0, to: 320), \"...\"), else: highlight_summary_raw), current_summary = if(stringLength(current_summary_raw) > 320, concat(substring(current_summary_raw, from: 0, to: 320), \"...\"), else: current_summary_raw), upcoming_summary = if(stringLength(upcoming_summary_raw) > 320, concat(substring(upcoming_summary_raw, from: 0, to: 320), \"...\"), else: upcoming_summary_raw), recommended_action = if(stringLength(recommended_action_raw) > 80, concat(substring(recommended_action_raw, from: 0, to: 80), \"...\"), else: recommended_action_raw)\n| fieldsAdd admin_brief_raw = concat(\"Breaking to plan for: \", current_breaking, \" || What is coming: \", upcoming_summary, \" || Why this matters: \", highlight_summary, \" || What to do now: \", recommended_action, \" || Release: \", release_link)\n| fieldsAdd admin_brief = if(stringLength(admin_brief_raw) > 1200, concat(substring(admin_brief_raw, from: 0, to: 1200), \"...\"), else: admin_brief_raw)\n| fields release_version, triage, breaking_now, coming_next, current_breaking, risk_summary, highlight_summary, recommended_action, admin_brief, release_link, release_notes_url, synced_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"triage\"]": 110,
+              "[\"release_version\"]": 120,
+              "[\"coming_next\"]": 170,
+              "[\"admin_brief\"]": 1100,
+              "[\"release_notes_url\"]": 280
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      }
+    },
+    "layouts": {
+      "0": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 4
+      },
+      "1": {
+        "x": 0,
+        "y": 4,
+        "w": 20,
+        "h": 2
+      },
+      "2": {
+        "x": 0,
+        "y": 6,
+        "w": 7,
+        "h": 6
+      },
+      "3": {
+        "x": 7,
+        "y": 6,
+        "w": 13,
+        "h": 6
+      },
+      "4": {
+        "x": 0,
+        "y": 19,
+        "w": 20,
+        "h": 7
+      },
+      "5": {
+        "x": 0,
+        "y": 12,
+        "w": 20,
+        "h": 7
+      },
+      "6": {
+        "x": 0,
+        "y": 26,
+        "w": 20,
+        "h": 2
+      },
+      "7": {
+        "x": 0,
+        "y": 28,
+        "w": 8,
+        "h": 6
+      },
+      "8": {
+        "x": 8,
+        "y": 28,
+        "w": 12,
+        "h": 6
+      },
+      "9": {
+        "x": 0,
+        "y": 40,
+        "w": 20,
+        "h": 6
+      },
+      "10": {
+        "x": 0,
+        "y": 34,
+        "w": 20,
+        "h": 6
+      },
+      "11": {
+        "x": 0,
+        "y": 46,
+        "w": 20,
+        "h": 2
+      },
+      "12": {
+        "x": 0,
+        "y": 48,
+        "w": 7,
+        "h": 6
+      },
+      "13": {
+        "x": 7,
+        "y": 48,
+        "w": 13,
+        "h": 6
+      },
+      "14": {
+        "x": 0,
+        "y": 60,
+        "w": 20,
+        "h": 6
+      },
+      "15": {
+        "x": 0,
+        "y": 54,
+        "w": 20,
+        "h": 6
+      },
+      "16": {
+        "x": 0,
+        "y": 66,
+        "w": 20,
+        "h": 2
+      },
+      "17": {
+        "x": 0,
+        "y": 68,
+        "w": 8,
+        "h": 6
+      },
+      "18": {
+        "x": 8,
+        "y": 68,
+        "w": 12,
+        "h": 6
+      },
+      "19": {
+        "x": 0,
+        "y": 79,
+        "w": 20,
+        "h": 6
+      },
+      "20": {
+        "x": 0,
+        "y": 74,
+        "w": 20,
+        "h": 5
+      },
+      "21": {
+        "x": 0,
+        "y": 85,
+        "w": 20,
+        "h": 2
+      },
+      "22": {
+        "x": 0,
+        "y": 87,
+        "w": 8,
+        "h": 6
+      },
+      "23": {
+        "x": 8,
+        "y": 87,
+        "w": 12,
+        "h": 6
+      },
+      "24": {
+        "x": 0,
+        "y": 99,
+        "w": 20,
+        "h": 7
+      },
+      "25": {
+        "x": 0,
+        "y": 93,
+        "w": 20,
+        "h": 6
+      }
+    },
+    "settings": {
+      "gridLayout": {
+        "mode": "responsive",
+        "columnsCount": 20
+      }
+    },
+    "annotations": []
+  },
+  "id": "0228fea1-28ed-47bf-8355-2b481b1512e6"
+}

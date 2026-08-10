@@ -1,0 +1,682 @@
+{
+  "id": "3f290f59-1263-40c9-9c34-db3474795727",
+  "name": "Dynatrace Component Release Tracking v4",
+  "type": "dashboard",
+  "owner": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "isPrivate": false,
+  "version": 46,
+  "modificationInfo": {
+    "createdBy": "",
+    "createdTime": "2026-08-06T10:53:16.491Z",
+    "lastModifiedBy": "",
+    "lastModifiedTime": "2026-08-06T12:56:59.979Z"
+  },
+  "content": {
+    "version": 21,
+    "variables": [],
+    "tiles": {
+      "0": {
+        "title": "Global Action Required Components",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | summarize runtime_issue = countIf(source_status != \"current\"), by: { component } | join [ load \"/lookups/dt_component_release_status\" | filter is_latest == \"true\" | summarize upgrade_issue = countIf(is_newer_than_running == \"true\"), by: { component } ], on: { component } | fieldsAdd upgrade_issue = right.upgrade_issue | summarize action_required = countIf(runtime_issue \u003e 0 or upgrade_issue \u003e 0)",
+        "visualization": "singleValue",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "1": {
+        "type": "markdown",
+        "content": "## SaaS",
+        "title": ""
+      },
+      "2": {
+        "title": "SaaS Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"saas\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"current\", else: if(source_status == \"partial\", \"partial\", else: if(source_status == \"not_configured\", \"not configured\", else: \"unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "3": {
+        "title": "SaaS Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"saas\" | fields released_version, release_status, is_latest, is_next_planned, running_version, release_url, fetched_at | sort is_latest desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"release_url\"]": 493.79
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "4": {
+        "title": "SaaS Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"saas\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\" | fields running_version, latest_published = released_version, is_newer_than_running, release_url, fetched_at | fieldsAdd action = if(is_newer_than_running == \"true\", \"newer available\", else: if(running_version == \"\" or running_version == \"-\", \"runtime unknown\", else: \"aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)) | sort action_priority asc | fields running_version, latest_published, action, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"release_url\"]": 658.79,
+              "[\"action\"]": 107.9
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "5": {
+        "title": "SaaS Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"saas\" and is_latest == \"true\" | fields released_version, risk = if(breaking_changes_summary == \"\" or breaking_changes_summary == \"-\", \"No breaking changes extracted\", else: breaking_changes_summary), highlights = if(highlights_summary == \"\" or highlights_summary == \"-\", \"No highlights extracted\", else: highlights_summary), release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"risk\"]": 231,
+              "[\"highlights\"]": 340.4,
+              "[\"release_url\"]": 447.79
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "6": {
+        "type": "markdown",
+        "content": "## ActiveGate",
+        "title": ""
+      },
+      "7": {
+        "title": "ActiveGate Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"activegate\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"current\", else: if(source_status == \"partial\", \"partial\", else: if(source_status == \"not_configured\", \"not configured\", else: \"unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "8": {
+        "title": "ActiveGate Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"activegate\" | fields released_version, release_status, is_latest, is_next_planned, running_version, release_url, fetched_at | sort is_latest desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "9": {
+        "title": "ActiveGate Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"activegate\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\" | fields running_version, latest_published = released_version, is_newer_than_running, release_url, fetched_at | fieldsAdd action = if(is_newer_than_running == \"true\", \"newer available\", else: if(running_version == \"\" or running_version == \"-\", \"runtime unknown\", else: \"aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)) | sort action_priority asc | fields running_version, latest_published, action, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"release_url\"]": 851.06,
+              "[\"action\"]": 106.9
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "10": {
+        "title": "ActiveGate Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"activegate\" and is_latest == \"true\" | fields released_version, risk = if(breaking_changes_summary == \"\" or breaking_changes_summary == \"-\", \"No breaking changes extracted\", else: breaking_changes_summary), highlights = if(highlights_summary == \"\" or highlights_summary == \"-\", \"No highlights extracted\", else: highlights_summary), release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false,
+          "table": {
+            "columnWidths": {
+              "[\"highlights\"]": 279.9,
+              "[\"risk\"]": 216.69,
+              "[\"release_url\"]": 640.08
+            }
+          }
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "11": {
+        "type": "markdown",
+        "content": "## OneAgent",
+        "title": ""
+      },
+      "12": {
+        "title": "OneAgent Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"oneagent\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"current\", else: if(source_status == \"partial\", \"partial\", else: if(source_status == \"not_configured\", \"not configured\", else: \"unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "13": {
+        "title": "OneAgent Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"oneagent\" | fields released_version, release_status, is_latest, is_next_planned, running_version, release_url, fetched_at | sort is_latest desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "14": {
+        "title": "OneAgent Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"oneagent\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\" | fields running_version, latest_published = released_version, is_newer_than_running, release_url, fetched_at | fieldsAdd action = if(is_newer_than_running == \"true\", \"newer available\", else: if(running_version == \"\" or running_version == \"-\", \"runtime unknown\", else: \"aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)) | sort action_priority asc | fields running_version, latest_published, action, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "15": {
+        "title": "OneAgent Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"oneagent\" and is_latest == \"true\" | fields released_version, risk = if(breaking_changes_summary == \"\" or breaking_changes_summary == \"-\", \"No breaking changes extracted\", else: breaking_changes_summary), highlights = if(highlights_summary == \"\" or highlights_summary == \"-\", \"No highlights extracted\", else: highlights_summary), release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "16": {
+        "type": "markdown",
+        "content": "## Operator",
+        "title": ""
+      },
+      "17": {
+        "title": "Operator Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"operator\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"current\", else: if(source_status == \"partial\", \"partial\", else: if(source_status == \"not_configured\", \"not configured\", else: \"unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "18": {
+        "title": "Operator Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"operator\" | fields released_version, release_status, is_latest, is_next_planned, running_version, release_url, fetched_at | sort is_latest desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "19": {
+        "title": "Operator Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"operator\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\" | fields running_version, latest_published = released_version, is_newer_than_running, release_url, fetched_at | fieldsAdd action = if(is_newer_than_running == \"true\", \"newer available\", else: if(running_version == \"\" or running_version == \"-\", \"runtime unknown\", else: \"aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)) | sort action_priority asc | fields running_version, latest_published, action, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "20": {
+        "title": "Operator Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"operator\" and is_latest == \"true\" | fields released_version, risk = if(breaking_changes_summary == \"\" or breaking_changes_summary == \"-\", \"No breaking changes extracted\", else: breaking_changes_summary), highlights = if(highlights_summary == \"\" or highlights_summary == \"-\", \"No highlights extracted\", else: highlights_summary), release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "21": {
+        "type": "markdown",
+        "content": "## EdgeConnect",
+        "title": ""
+      },
+      "22": {
+        "title": "Edge Runtime Source Health",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_runtime_versions\" | filter component == \"edgeconnect\" | summarize rows = count(), by: { source_status, source_type, observed_version } | fieldsAdd status_badge = if(source_status == \"current\", \"current\", else: if(source_status == \"partial\", \"partial\", else: if(source_status == \"not_configured\", \"not configured\", else: \"unavailable\"))) | sort source_status asc, source_type asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "23": {
+        "title": "Edge Release Status",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"edgeconnect\" | fields released_version, release_status, is_latest, is_next_planned, running_version, release_url, fetched_at | sort is_latest desc, released_version desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "24": {
+        "title": "Edge Upgrade Queue",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"edgeconnect\" and is_latest == \"true\" and released_version != \"\" and released_version != \"Not yet published\" | fields running_version, latest_published = released_version, is_newer_than_running, release_url, fetched_at | fieldsAdd action = if(is_newer_than_running == \"true\", \"newer available\", else: if(running_version == \"\" or running_version == \"-\", \"runtime unknown\", else: \"aligned\")), action_priority = if(is_newer_than_running == \"true\", 1, else: if(running_version == \"\" or running_version == \"-\", 2, else: 3)) | sort action_priority asc | fields running_version, latest_published, action, release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      },
+      "25": {
+        "title": "Edge Risk and Highlights",
+        "type": "data",
+        "query": "load \"/lookups/dt_component_release_status\" | filter component == \"edgeconnect\" and is_latest == \"true\" | fields released_version, risk = if(breaking_changes_summary == \"\" or breaking_changes_summary == \"-\", \"No breaking changes extracted\", else: breaking_changes_summary), highlights = if(highlights_summary == \"\" or highlights_summary == \"-\", \"No highlights extracted\", else: highlights_summary), release_url, fetched_at",
+        "visualization": "table",
+        "visualizationSettings": {
+          "autoSelectVisualization": false
+        },
+        "davis": {
+          "davisVisualization": {
+            "isAvailable": true
+          }
+        },
+        "querySettings": {
+          "maxResultRecords": 1000,
+          "defaultScanLimitGbytes": 500,
+          "maxResultMegaBytes": 1,
+          "defaultSamplingRatio": 10,
+          "enableSampling": false
+        }
+      }
+    },
+    "layouts": {
+      "0": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 4
+      },
+      "1": {
+        "x": 0,
+        "y": 4,
+        "w": 20,
+        "h": 2
+      },
+      "2": {
+        "x": 0,
+        "y": 6,
+        "w": 7,
+        "h": 6
+      },
+      "3": {
+        "x": 7,
+        "y": 6,
+        "w": 13,
+        "h": 6
+      },
+      "4": {
+        "x": 0,
+        "y": 19,
+        "w": 20,
+        "h": 7
+      },
+      "5": {
+        "x": 0,
+        "y": 12,
+        "w": 20,
+        "h": 7
+      },
+      "6": {
+        "x": 0,
+        "y": 26,
+        "w": 20,
+        "h": 2
+      },
+      "7": {
+        "x": 0,
+        "y": 28,
+        "w": 8,
+        "h": 6
+      },
+      "8": {
+        "x": 8,
+        "y": 28,
+        "w": 12,
+        "h": 6
+      },
+      "9": {
+        "x": 0,
+        "y": 40,
+        "w": 20,
+        "h": 6
+      },
+      "10": {
+        "x": 0,
+        "y": 34,
+        "w": 20,
+        "h": 6
+      },
+      "11": {
+        "x": 0,
+        "y": 46,
+        "w": 20,
+        "h": 2
+      },
+      "12": {
+        "x": 0,
+        "y": 48,
+        "w": 7,
+        "h": 6
+      },
+      "13": {
+        "x": 7,
+        "y": 48,
+        "w": 13,
+        "h": 6
+      },
+      "14": {
+        "x": 0,
+        "y": 60,
+        "w": 20,
+        "h": 6
+      },
+      "15": {
+        "x": 0,
+        "y": 54,
+        "w": 20,
+        "h": 6
+      },
+      "16": {
+        "x": 0,
+        "y": 66,
+        "w": 20,
+        "h": 2
+      },
+      "17": {
+        "x": 0,
+        "y": 68,
+        "w": 8,
+        "h": 6
+      },
+      "18": {
+        "x": 8,
+        "y": 68,
+        "w": 12,
+        "h": 6
+      },
+      "19": {
+        "x": 0,
+        "y": 79,
+        "w": 20,
+        "h": 6
+      },
+      "20": {
+        "x": 0,
+        "y": 74,
+        "w": 20,
+        "h": 5
+      },
+      "21": {
+        "x": 0,
+        "y": 85,
+        "w": 20,
+        "h": 2
+      },
+      "22": {
+        "x": 0,
+        "y": 87,
+        "w": 8,
+        "h": 6
+      },
+      "23": {
+        "x": 8,
+        "y": 87,
+        "w": 12,
+        "h": 6
+      },
+      "24": {
+        "x": 0,
+        "y": 99,
+        "w": 20,
+        "h": 7
+      },
+      "25": {
+        "x": 0,
+        "y": 93,
+        "w": 20,
+        "h": 6
+      }
+    },
+    "settings": {
+      "gridLayout": {
+        "mode": "responsive",
+        "columnsCount": 20
+      }
+    },
+    "annotations": []
+  }
+}

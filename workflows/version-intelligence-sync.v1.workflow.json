@@ -1,0 +1,247 @@
+{
+  "title": "Version Intelligence Sync v1",
+  "owner": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "ownerType": "USER",
+  "description": "Daily workflow: collect Dynatrace version intelligence across components, preserve OneAgent and RUM baselines, and feed lookup-backed dashboards.",
+  "isPrivate": false,
+  "isDeployed": true,
+  "tasks": {
+    "oneagent_collect_release_baseline": {
+      "action": "dynatrace.automations:run-javascript",
+      "description": "Fetch latest OneAgent sprint and ESS oldest supported version from Dynatrace docs.",
+      "input": {
+        "script": "import { execution } from \"@dynatrace-sdk/automation-utils\";\n\nasync function getText(url) {\n  const resp = await fetch(url);\n  if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);\n  return await resp.text();\n}\n\nexport default async function () {\n  await execution();\n\n  const sitemap = await getText('https://docs.dynatrace.com/docs/sitemap.xml');\n  const matches = [...sitemap.matchAll(/oneagent\\/sprint-(\\d+)/g)].map((m) => Number(m[1]));\n  if (!matches.length) throw new Error('No sprint links found in docs sitemap');\n\n  const latestSprint = Math.max(...matches);\n  const latestRelease = `1.${latestSprint}`;\n  const sprintUrl = `https://docs.dynatrace.com/docs/whats-new/oneagent/sprint-${latestSprint}`;\n  const sprintHtml = await getText(sprintUrl);\n\n  const essMatch = sprintHtml.match(/Enterprise Success and Support[\\s\\S]*?(1\\.\\d{3})/i);\n  if (!essMatch) throw new Error('Could not parse ESS oldest supported version');\n  const oldestSupportedEss = essMatch[1];\n\n  return {\n    latest_release: latestRelease,\n    oldest_supported_ess: oldestSupportedEss,\n    fetched_at: new Date().toISOString(),\n    source_url: sprintUrl\n  };\n}\n"
+      },
+      "name": "oneagent_collect_release_baseline",
+      "position": {
+        "x": 0,
+        "y": 1
+      },
+      "predecessors": []
+    },
+    "oneagent_store_baseline_event": {
+      "action": "dynatrace.automations:run-javascript",
+      "conditions": {
+        "states": {
+          "oneagent_collect_release_baseline": "SUCCESS"
+        }
+      },
+      "description": "Store OneAgent baseline as a custom annotation event using vault credential and runtime tenant URL.",
+      "input": {
+        "script": "import { result } from \"@dynatrace-sdk/automation-utils\";\nimport { credentialVaultClient } from \"@dynatrace-sdk/client-classic-environment-v2\";\nimport { getEnvironmentUrl } from \"@dynatrace-sdk/app-environment\";\n\n// Set to a Credential Vault ID (CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx).\n// Token needs: events.ingest\nconst RUM_TOKEN_VAULT_ID = \"CREDENTIALS_VAULT-152083F2EC7D5E4B\";\n\nasync function resolveToken(id) {\n  const normalized = (id || '').trim();\n  if (!normalized) throw new Error('RUM_TOKEN_VAULT_ID is empty.');\n  if (!normalized.startsWith('CREDENTIALS_VAULT-')) {\n    throw new Error('RUM_TOKEN_VAULT_ID must be a Credential Vault ID (CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx).');\n  }\n\n  const credentials = await credentialVaultClient.getCredentialsDetails({ id: normalized });\n  if (!credentials || !credentials.token) {\n    throw new Error(`No token found in vault entry ${normalized}. Ensure the entry type is \"Token\" and the workflow has access.`);\n  }\n  return credentials.token;\n}\n\nexport default async function () {\n  if (RUM_TOKEN_VAULT_ID.includes('YOUR_CREDENTIAL_ID')) {\n    throw new Error('Set RUM_TOKEN_VAULT_ID to a Credential Vault ID (CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx).');\n  }\n\n  const versions = await result('oneagent_collect_release_baseline');\n  const apiToken = await resolveToken(RUM_TOKEN_VAULT_ID);\n\n  const envUrl = (getEnvironmentUrl() || '').trim();\n  if (!envUrl) throw new Error('getEnvironmentUrl() returned an empty value.');\n\n  const env = new URL(envUrl);\n  env.host = env.host.replace('.apps.', '.');\n  env.pathname = '';\n  env.search = '';\n  env.hash = '';\n\n  const baseUrl = env.toString().replace(/\\/$/, '');\n\n  const event = {\n    eventType: 'CUSTOM_ANNOTATION',\n    title: `OneAgentBaseline|${versions.latest_release}|${versions.oldest_supported_ess}|${versions.fetched_at}`,\n    description: `OneAgent release baseline sync from ${versions.source_url}`,\n    properties: {\n      latest_release: versions.latest_release,\n      oldest_supported_ess: versions.oldest_supported_ess,\n      fetched_at: versions.fetched_at,\n      source_url: versions.source_url\n    }\n  };\n\n  const resp = await fetch(`${baseUrl}/api/v2/events/ingest`, {\n    method: 'POST',\n    headers: {\n      Authorization: `Api-Token ${apiToken}`,\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify(event)\n  });\n\n  if (!resp.ok) {\n    const body = await resp.text();\n    if (resp.status == 401) {\n      throw new Error(`Events ingest failed: HTTP 401 ${body}. Token authentication failed for vault credential ${RUM_TOKEN_VAULT_ID}.`);\n    }\n    throw new Error(`Events ingest failed: HTTP ${resp.status} ${body}`);\n  }\n\n  return { stored: true };\n}\n"
+      },
+      "name": "oneagent_store_baseline_event",
+      "position": {
+        "x": 0,
+        "y": 2
+      },
+      "predecessors": [
+        "oneagent_collect_release_baseline"
+      ]
+    },
+    "rum_collect_runtime_versions": {
+      "action": "dynatrace.automations:run-javascript",
+      "description": "Collect RUM Classic JS library versions per app, emit per-app and summary custom annotation events.",
+      "input": {
+        "script": "import { execution } from \"@dynatrace-sdk/automation-utils\";\nimport { credentialVaultClient } from \"@dynatrace-sdk/client-classic-environment-v2\";\nimport { getEnvironmentUrl } from \"@dynatrace-sdk/app-environment\";\n\n// Set to a Credential Vault ID (CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx).\n// Token needs: RumJavaScriptTagManagement + events.ingest\n// Optional for human-readable tag labels: rumManualInsertionTags.read\nconst RUM_TOKEN_VAULT_ID = \"CREDENTIALS_VAULT-152083F2EC7D5E4B\";\nlet DT_API_TOKEN = \"\";\n\nasync function loadToken() {\n  if (RUM_TOKEN_VAULT_ID.includes(\"YOUR_CREDENTIAL_ID\")) {\n    throw new Error(\"Set RUM_TOKEN_VAULT_ID to a Credential Vault ID (CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx).\");\n  }\n\n  const normalized = (RUM_TOKEN_VAULT_ID || \"\").trim();\n  if (!normalized) throw new Error(\"RUM_TOKEN_VAULT_ID is empty.\");\n  if (!normalized.startsWith(\"CREDENTIALS_VAULT-\")) {\n    throw new Error(\"RUM_TOKEN_VAULT_ID must be a Credential Vault ID (CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx).\");\n  }\n\n  const credentials = await credentialVaultClient.getCredentialsDetails({ id: normalized });\n  if (!credentials || !credentials.token) {\n    throw new Error(`No token found in vault entry ${normalized}. Ensure the entry type is \\\"Token\\\" and the workflow has access.`);\n  }\n  DT_API_TOKEN = credentials.token;\n}\n\nasync function dtGetJson(url) {\n  const resp = await fetch(url, { headers: { Authorization: `Api-Token ${DT_API_TOKEN}` } });\n  if (!resp.ok) {\n    const body = await resp.text();\n    if (resp.status == 401) {\n      throw new Error(`GET ${url} failed: HTTP 401 ${body}. Token authentication failed for vault credential ${RUM_TOKEN_VAULT_ID}.`);\n    }\n    throw new Error(`GET ${url} failed: HTTP ${resp.status} ${body}`);\n  }\n  return await resp.json();\n}\n\nasync function dtGetText(url) {\n  const resp = await fetch(url, { headers: { Authorization: `Api-Token ${DT_API_TOKEN}` } });\n  if (!resp.ok) {\n    const body = await resp.text();\n    if (resp.status == 401) {\n      throw new Error(`GET ${url} failed: HTTP 401 ${body}. Token authentication failed for vault credential ${RUM_TOKEN_VAULT_ID}.`);\n    }\n    throw new Error(`GET ${url} failed: HTTP ${resp.status} ${body}`);\n  }\n  return (await resp.text()).trim();\n}\n\nasync function dtTryGetText(url) {\n  const resp = await fetch(url, { headers: { Authorization: `Api-Token ${DT_API_TOKEN}` } });\n  if (!resp.ok) {\n    return \"\";\n  }\n  return await resp.text();\n}\n\nasync function dtPostJson(url, payload) {\n  const resp = await fetch(url, {\n    method: \"POST\",\n    headers: { Authorization: `Api-Token ${DT_API_TOKEN}`, \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(payload)\n  });\n  if (!resp.ok) {\n    const body = await resp.text();\n    if (resp.status == 401) {\n      throw new Error(`POST ${url} failed: HTTP 401 ${body}. Token authentication failed for vault credential ${RUM_TOKEN_VAULT_ID}.`);\n    }\n    throw new Error(`POST ${url} failed: HTTP ${resp.status} ${body}`);\n  }\n  return await resp.text();\n}\n\nfunction normalizeVersion(value) {\n  if (value === null || value === undefined) return \"\";\n  return String(value).trim();\n}\n\nfunction toComparableBigInt(value) {\n  const normalized = normalizeVersion(value);\n  if (!/^\\d+$/.test(normalized)) return null;\n  return BigInt(normalized);\n}\n\nfunction pickSupportFloor(configuredVersions) {\n  const candidates = [\n    normalizeVersion(configuredVersions.latestIESupported),\n    normalizeVersion(configuredVersions.latestIE11Supported)\n  ].filter((v) => /^\\d+$/.test(v));\n\n  if (!candidates.length) return \"\";\n  return candidates.reduce((min, current) => {\n    if (BigInt(current) < BigInt(min)) return current;\n    return min;\n  });\n}\n\nfunction pickEffectiveTarget(configuredVersions, latestVersion) {\n  const custom = normalizeVersion(configuredVersions.custom);\n  if (/^\\d+$/.test(custom) && custom !== \"0\") {\n    return { targetVersion: custom, targetPolicy: \"custom\" };\n  }\n\n  const latestStable = normalizeVersion(configuredVersions.latestStable);\n  if (/^\\d+$/.test(latestStable)) {\n    return { targetVersion: latestStable, targetPolicy: \"latest_stable\" };\n  }\n\n  const previousStable = normalizeVersion(configuredVersions.previousStable);\n  if (/^\\d+$/.test(previousStable)) {\n    return { targetVersion: previousStable, targetPolicy: \"previous_stable_fallback\" };\n  }\n\n  return { targetVersion: normalizeVersion(latestVersion), targetPolicy: \"latest_available_fallback\" };\n}\n\nfunction computePolicyStatus(currentVersion, targetVersion, supportFloorVersion) {\n  const currentBig = toComparableBigInt(currentVersion);\n  const targetBig = toComparableBigInt(targetVersion);\n  const supportFloorBig = toComparableBigInt(supportFloorVersion);\n\n  if (currentBig === null || targetBig === null) {\n    return \"unknown\";\n  }\n  if (supportFloorBig !== null && currentBig < supportFloorBig) {\n    return \"unsupported\";\n  }\n  if (currentBig === targetBig) {\n    return \"on_target\";\n  }\n  if (currentBig > targetBig) {\n    return \"above_target\";\n  }\n  return \"below_target\";\n}\n\nfunction extractHumanReadableVersionLabel(text) {\n  const source = String(text || \"\");\n  const patterns = [\n    /\\b1\\.\\d+\\.\\d+\\.\\d{8}-\\d{6}\\b/,\n    /\\b1\\.\\d+\\.\\d+\\.\\d+\\.\\d{8}-\\d{6}\\b/,\n    /\\b1\\.\\d+\\.\\d+\\.\\d{8}\\b/\n  ];\n\n  for (const pattern of patterns) {\n    const match = source.match(pattern);\n    if (match) {\n      return match[0];\n    }\n  }\n  return \"\";\n}\n\nfunction summarizeTargetLabel(apps) {\n  const labels = [...new Set(apps.map((app) => normalizeVersion(app.humanReadableTargetLabel)).filter(Boolean))];\n  if (labels.length === 1) return labels[0];\n  return \"\";\n}\n\nasync function mapConcurrent(items, concurrency, fn) {\n  const out = new Array(items.length);\n  let idx = 0;\n  async function worker() {\n    while (true) {\n      const current = idx++;\n      if (current >= items.length) return;\n      out[current] = await fn(items[current], current);\n    }\n  }\n  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, items.length)) }, worker));\n  return out;\n}\n\nexport default async function () {\n  await execution();\n  await loadToken();\n\n  const envUrl = (getEnvironmentUrl() || \"\").trim();\n  if (!envUrl) throw new Error(\"getEnvironmentUrl() returned an empty value.\");\n\n  const env = new URL(envUrl);\n  env.host = env.host.replace(\".apps.\", \".\");\n  env.pathname = \"\";\n  env.search = \"\";\n  env.hash = \"\";\n\n  const baseUrl = env.toString().replace(/\\/$/, \"\");\n  const fetchedAt = new Date().toISOString();\n\n  const manualApps = await dtGetJson(`${baseUrl}/api/v1/rum/manualApps`);\n  if (!Array.isArray(manualApps)) throw new Error(\"Expected /api/v1/rum/manualApps to return an array\");\n\n  const latestVersion = normalizeVersion(await dtGetText(`${baseUrl}/api/v1/rum/jsLatestVersion`));\n  const configuredVersions = await dtGetJson(`${baseUrl}/api/v1/rum/jsConfiguredVersions`);\n  const { targetVersion, targetPolicy } = pickEffectiveTarget(configuredVersions, latestVersion);\n  const supportFloorVersion = pickSupportFloor(configuredVersions);\n  const oldestSupportedVersion = supportFloorVersion || \"N/A\";\n\n  if (!latestVersion) throw new Error(\"Could not resolve latest RUM Classic JS version from /api/v1/rum/jsLatestVersion\");\n  if (!targetVersion) throw new Error(\"Could not resolve effective target RUM Classic JS version from configured policy\");\n\n  const enriched = await mapConcurrent(manualApps, 5, async (app) => {\n    const applicationId = app.applicationId;\n    const displayName = app.displayName || applicationId;\n    const jsVersion = await dtGetText(`${baseUrl}/api/v1/rum/appRevision/${applicationId}`);\n    const javaScriptTag = await dtTryGetText(`${baseUrl}/api/v2/rum/javaScriptTag/${applicationId}`);\n    const inlineCode = javaScriptTag ? \"\" : await dtTryGetText(`${baseUrl}/api/v2/rum/inlineCode/${applicationId}`);\n    let humanReadableTargetLabel = extractHumanReadableVersionLabel(javaScriptTag || inlineCode);\n    if (!humanReadableTargetLabel) {\n      humanReadableTargetLabel = jsVersion;\n    }\n    return { applicationId, displayName, jsVersion, humanReadableTargetLabel };\n  });\n\n  let effectiveTargetLabel = summarizeTargetLabel(enriched);\n  if (!effectiveTargetLabel) {\n    effectiveTargetLabel = targetVersion;\n  }\n  const ingestUrl = `${baseUrl}/api/v2/events/ingest`;\n\n  await dtPostJson(ingestUrl, {\n    eventType: \"CUSTOM_ANNOTATION\",\n    title: `RUMJSBaseline|${latestVersion}|${oldestSupportedVersion}|${fetchedAt}`,\n    description: \"RUM Classic JS baseline sync (latest, oldest supported, and effective target)\",\n    properties: {\n      source: \"rum_classic_baseline\",\n      latest_version: latestVersion,\n      oldest_supported_version: oldestSupportedVersion,\n      support_floor_known: supportFloorVersion ? \"true\" : \"false\",\n      effective_target_version: targetVersion,\n      effective_target_policy: targetPolicy,\n      effective_target_label: effectiveTargetLabel,\n      latest_stable: normalizeVersion(configuredVersions.latestStable),\n      previous_stable: normalizeVersion(configuredVersions.previousStable),\n      latest_ie_supported: normalizeVersion(configuredVersions.latestIESupported),\n      latest_ie11_supported: normalizeVersion(configuredVersions.latestIE11Supported),\n      custom_configured_version: normalizeVersion(configuredVersions.custom),\n      fetched_at: fetchedAt\n    }\n  });\n\n  await mapConcurrent(enriched, 5, async (app) => {\n    let label = normalizeVersion(app.humanReadableTargetLabel);\n    if (!label) label = app.jsVersion;\n    await dtPostJson(ingestUrl, {\n      eventType: \"CUSTOM_ANNOTATION\",\n      title: `RUMJSVersion|${app.applicationId}|${app.jsVersion}|${fetchedAt}`,\n      description: `RUM Classic JS library version for ${app.displayName}`,\n      properties: {\n        source: \"rum_classic_api\",\n        application_id: app.applicationId,\n        application_name: app.displayName,\n        js_library_version: app.jsVersion,\n        human_readable_target_label: label,\n        fetched_at: fetchedAt\n      }\n    });\n  });\n\n  const byVersion = {};\n  const policyCounts = {\n    on_target: 0,\n    below_target: 0,\n    unsupported: 0,\n    above_target: 0,\n    unknown: 0\n  };\n\n  for (const app of enriched) {\n    byVersion[app.jsVersion] = (byVersion[app.jsVersion] || 0) + 1;\n    const status = computePolicyStatus(app.jsVersion, targetVersion, supportFloorVersion);\n    policyCounts[status] = (policyCounts[status] || 0) + 1;\n  }\n\n  await mapConcurrent(enriched, 5, async (app) => {\n    const status = computePolicyStatus(app.jsVersion, targetVersion, supportFloorVersion);\n    let label = normalizeVersion(app.humanReadableTargetLabel);\n    if (!label) label = app.jsVersion;\n    await dtPostJson(ingestUrl, {\n      eventType: \"CUSTOM_ANNOTATION\",\n      title: `RUMJSPolicyApp|${app.applicationId}|${status}|${fetchedAt}`,\n      description: `RUM Classic JS policy status for ${app.displayName}`,\n      properties: {\n        source: \"rum_classic_policy_app\",\n        application_id: app.applicationId,\n        application_name: app.displayName,\n        js_library_version: app.jsVersion,\n        human_readable_target_label: label,\n        effective_target_version: targetVersion,\n        effective_target_policy: targetPolicy,\n        effective_target_label: effectiveTargetLabel,\n        latest_version: latestVersion,\n        oldest_supported_version: oldestSupportedVersion,\n      support_floor_known: supportFloorVersion ? \"true\" : \"false\",\n        policy_status: status,\n        fetched_at: fetchedAt\n      }\n    });\n  });\n\n  await dtPostJson(ingestUrl, {\n    eventType: \"CUSTOM_ANNOTATION\",\n    title: `RUMJSVersionSyncSummary|${enriched.length}|${Object.keys(byVersion).length}|${fetchedAt}`,\n    description: \"RUM Classic JS version sync summary\",\n    properties: {\n      source: \"rum_classic_api\",\n      app_count: String(enriched.length),\n      versions_found: String(Object.keys(byVersion).length),\n      fetched_at: fetchedAt\n    }\n  });\n\n  await dtPostJson(ingestUrl, {\n    eventType: \"CUSTOM_ANNOTATION\",\n    title: `RUMJSPolicySummary|${policyCounts.on_target}|${policyCounts.below_target}|${policyCounts.unsupported}|${fetchedAt}`,\n    description: \"RUM Classic JS policy status summary\",\n    properties: {\n      source: \"rum_classic_policy_summary\",\n      apps_on_target: String(policyCounts.on_target),\n      apps_below_target: String(policyCounts.below_target),\n      apps_unsupported: String(policyCounts.unsupported),\n      apps_above_target: String(policyCounts.above_target),\n      apps_unknown: String(policyCounts.unknown),\n      effective_target_version: targetVersion,\n      effective_target_policy: targetPolicy,\n      effective_target_label: effectiveTargetLabel,\n      latest_version: latestVersion,\n      oldest_supported_version: oldestSupportedVersion,\n      support_floor_known: supportFloorVersion ? \"true\" : \"false\",\n      fetched_at: fetchedAt\n    }\n  });\n\n  return {\n    fetched_at: fetchedAt,\n    latest_version: latestVersion,\n    oldest_supported_version: oldestSupportedVersion,\n    effective_target_version: targetVersion,\n    effective_target_policy: targetPolicy,\n    effective_target_label: effectiveTargetLabel,\n    app_count: enriched.length,\n    versions_found: Object.keys(byVersion).length,\n    policy_status: policyCounts,\n    by_version: byVersion\n  };\n}\n"
+      },
+      "name": "rum_collect_runtime_versions",
+      "position": {
+        "x": 1,
+        "y": 1
+      },
+      "predecessors": []
+    },
+    "collect_release_indexes": {
+      "action": "dynatrace.automations:run-javascript",
+      "description": "Collect latest and next planned release metadata from Dynatrace docs pages.",
+      "input": {
+        "script": "import { execution } from \"@dynatrace-sdk/automation-utils\";\n\nasync function getText(url) {\n  const resp = await fetch(url);\n  if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);\n  return await resp.text();\n}\n\nfunction uniqueBy(items, keyFn) {\n  const out = [];\n  const seen = new Set();\n  for (const i of items) {\n    const k = keyFn(i);\n    if (seen.has(k)) continue;\n    seen.add(k);\n    out.push(i);\n  }\n  return out;\n}\n\nfunction compareSemverDesc(a, b) {\n  const pa = a.split('.').map((n) => Number(n));\n  const pb = b.split('.').map((n) => Number(n));\n  const len = Math.max(pa.length, pb.length);\n  for (let i = 0; i < len; i += 1) {\n    const av = pa[i] || 0;\n    const bv = pb[i] || 0;\n    if (av !== bv) return bv - av;\n  }\n  return 0;\n}\n\nfunction parseLatestFromSitemap(sitemap, component) {\n  const urls = [...sitemap.matchAll(new RegExp(`<loc>(https://docs\\.dynatrace\\.com/docs/whats-new/${component.path}/[^<]+)</loc>`, 'g'))]\n    .map((m) => m[1]);\n\n  if (!urls.length) {\n    return null;\n  }\n\n  if (component.mode === 'sprint') {\n    const entries = uniqueBy(\n      urls\n        .map((u) => {\n          const m = u.match(/\\/sprint-(\\d+)/);\n          if (!m) return null;\n          return { url: u, sprint: Number(m[1]), version: `1.${Number(m[1])}` };\n        })\n        .filter(Boolean),\n      (e) => e.url\n    );\n\n    if (!entries.length) return null;\n    entries.sort((a, b) => b.sprint - a.sprint);\n    return entries[0];\n  }\n\n  if (component.mode === 'operator_semver') {\n    const entries = uniqueBy(\n      urls\n        .map((u) => {\n          const m = u.match(/dto-fix-(\\d+)-(\\d+)-(\\d+)/);\n          if (!m) return null;\n          return { url: u, version: `${Number(m[1])}.${Number(m[2])}.${Number(m[3])}` };\n        })\n        .filter(Boolean),\n      (e) => e.url\n    );\n    if (!entries.length) return null;\n    entries.sort((a, b) => compareSemverDesc(a.version, b.version));\n    return entries[0];\n  }\n\n  if (component.mode === 'edgeconnect_semver') {\n    const entries = uniqueBy(\n      urls\n        .map((u) => {\n          const m = u.match(/edgeconnect-release-notes-(\\d+)-(\\d+)-(\\d+)/);\n          if (!m) return null;\n          return { url: u, version: `${Number(m[1])}.${Number(m[2])}.${Number(m[3])}` };\n        })\n        .filter(Boolean),\n      (e) => e.url\n    );\n    if (!entries.length) return null;\n    entries.sort((a, b) => compareSemverDesc(a.version, b.version));\n    return entries[0];\n  }\n\n  return null;\n}\n\nexport default async function () {\n  await execution();\n\n  const components = [\n    { component: 'saas', path: 'saas', mode: 'sprint', index_url: 'https://docs.dynatrace.com/docs/whats-new/saas' },\n    { component: 'oneagent', path: 'oneagent', mode: 'sprint', index_url: 'https://docs.dynatrace.com/docs/whats-new/oneagent' },\n    { component: 'activegate', path: 'activegate', mode: 'sprint', index_url: 'https://docs.dynatrace.com/docs/whats-new/activegate' },\n    { component: 'operator', path: 'dynatrace-operator', mode: 'operator_semver', index_url: 'https://docs.dynatrace.com/docs/whats-new/dynatrace-operator' },\n    { component: 'edgeconnect', path: 'edgeconnect', mode: 'edgeconnect_semver', index_url: 'https://docs.dynatrace.com/docs/whats-new/edgeconnect' }\n  ];\n\n  const fetched_at = new Date().toISOString();\n  const release_rows = [];\n  const sitemap = await getText('https://docs.dynatrace.com/docs/sitemap.xml');\n\n  for (const c of components) {\n    const latest = parseLatestFromSitemap(sitemap, c);\n\n    release_rows.push({\n      component: c.component,\n      released_version: latest ? latest.version : '',\n      release_status: latest ? 'current' : 'unavailable',\n      rollout_start_date: '',\n      is_latest: 'true',\n      is_next_planned: 'false',\n      release_url: latest ? latest.url : c.index_url,\n      index_url: c.index_url,\n      fetched_at\n    });\n\n    release_rows.push({\n      component: c.component,\n      released_version: 'Not yet published',\n      release_status: 'not_yet_published',\n      rollout_start_date: '',\n      is_latest: 'false',\n      is_next_planned: 'true',\n      release_url: c.index_url,\n      index_url: c.index_url,\n      fetched_at\n    });\n  }\n\n  const summary_prompt = release_rows\n    .filter((r) => r.is_latest === 'true')\n    .map((r) => `${r.component}: ${r.released_version || 'unavailable'} ${r.release_url}`)\n    .join(String.fromCharCode(10));\n\n  return { fetched_at, release_rows, summary_prompt };\n}\n"
+      },
+      "name": "collect_release_indexes",
+      "position": {
+        "x": 2,
+        "y": 1
+      },
+      "predecessors": []
+    },
+    "collect_saas_current_version": {
+      "action": "dynatrace.automations:run-javascript",
+      "description": "Collect current SaaS tenant version via cluster version API.",
+      "input": {
+        "script": "import { execution } from \"@dynatrace-sdk/automation-utils\";\nimport { credentialVaultClient } from \"@dynatrace-sdk/client-classic-environment-v2\";\nimport { getEnvironmentUrl } from \"@dynatrace-sdk/app-environment\";\n\nconst API_TOKEN_VAULT_ID = \"CREDENTIALS_VAULT-152083F2EC7D5E4B\";\n\nasync function resolveToken(id) {\n  const credentials = await credentialVaultClient.getCredentialsDetails({ id });\n  if (!credentials || !credentials.token) throw new Error(`No token in vault ${id}`);\n  return credentials.token;\n}\n\nexport default async function () {\n  await execution();\n  const fetched_at = new Date().toISOString();\n  try {\n    const apiToken = await resolveToken(API_TOKEN_VAULT_ID);\n    const envUrl = (getEnvironmentUrl() || \"\").trim();\n    const env = new URL(envUrl);\n    env.host = env.host.replace(\".apps.\", \".\");\n    env.pathname = \"/api/v1/config/clusterversion\";\n    env.search = \"\";\n    env.hash = \"\";\n\n    const resp = await fetch(env.toString(), { headers: { Authorization: `Api-Token ${apiToken}` } });\n    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);\n    const body = await resp.json();\n\n    return {\n      runtime_rows: [{\n        component: \"saas\",\n        observed_version: String(body.version || \"\"),\n        running_count: \"1\",\n        source_type: \"cluster_version_api\",\n        source_status: \"current\",\n        observed_at: fetched_at,\n        collection_message: \"\"\n      }]\n    };\n  } catch (error) {\n    return {\n      runtime_rows: [{\n        component: \"saas\",\n        observed_version: \"\",\n        running_count: \"0\",\n        source_type: \"cluster_version_api\",\n        source_status: \"unavailable\",\n        observed_at: fetched_at,\n        collection_message: String(error)\n      }]\n    };\n  }\n}\n"
+      },
+      "name": "collect_saas_current_version",
+      "position": {
+        "x": 2,
+        "y": 2
+      },
+      "predecessors": []
+    },
+    "collect_oneagent_runtime_distribution": {
+      "action": "dynatrace.automations:execute-dql-query",
+      "description": "Collect OneAgent runtime version distribution from host telemetry.",
+      "input": {
+        "query": "fetch dt.entity.host | filter isNotNull(installerVersion) | summarize hosts = count(), by: {installerVersion} | sort installerVersion desc"
+      },
+      "name": "collect_oneagent_runtime_distribution",
+      "position": {
+        "x": 2,
+        "y": 3
+      },
+      "predecessors": []
+    },
+    "build_lookup_payloads": {
+      "action": "dynatrace.automations:run-javascript",
+      "conditions": {
+        "states": {
+          "collect_release_indexes": "SUCCESS",
+          "collect_saas_current_version": "SUCCESS",
+          "collect_oneagent_runtime_distribution": "SUCCESS",
+          "collect_activegate_runtime_distribution": "SUCCESS",
+          "collect_operator_runtime_distribution": "SUCCESS",
+          "collect_edgeconnect_runtime_distribution": "SUCCESS"
+        }
+      },
+      "description": "Normalize release and runtime records and add explicit unavailable rows for components pending runtime source validation.",
+      "input": {
+        "script": "import { result } from \"@dynatrace-sdk/automation-utils\";\n\nfunction unavailableRow(component, observedAt, message, sourceType = \"pending_source_validation\") {\n  return {\n    component,\n    observed_version: \"\",\n    running_count: \"0\",\n    source_type: sourceType,\n    source_status: \"unavailable\",\n    observed_at: observedAt,\n    collection_message: message\n  };\n}\n\nfunction normalizeOneAgent(records, observedAt) {\n  const out = [];\n  const rows = Array.isArray(records) ? records : [];\n  for (const r of rows) {\n    const version = String(r.installerVersion || r.oneagent_version || \"\").trim();\n    const count = r.hosts ?? r.count ?? 0;\n    if (!version) continue;\n    out.push({\n      component: \"oneagent\",\n      observed_version: version,\n      running_count: String(count),\n      source_type: \"dql_host_installerVersion\",\n      source_status: \"current\",\n      observed_at: observedAt,\n      collection_message: \"\"\n    });\n  }\n  if (!out.length) {\n    out.push(unavailableRow(\"oneagent\", observedAt, \"No OneAgent runtime rows returned\", \"dql_host_installerVersion\"));\n  }\n  return out;\n}\n\nfunction rowsFromTaskPayload(taskResult, component, observedAt) {\n  const rows = Array.isArray(taskResult?.runtime_rows) ? taskResult.runtime_rows : [];\n  if (rows.length) return rows;\n  return [unavailableRow(component, observedAt, `No runtime payload from ${component} collector`)];\n}\n\nfunction normalizeDistributionRows({ component, records, versionField, countField, observedAt, sourceType }) {\n  const out = [];\n  const rows = Array.isArray(records) ? records : [];\n  for (const r of rows) {\n    const version = String(r?.[versionField] || \"\").trim();\n    const count = r?.[countField] ?? 0;\n    if (!version) continue;\n    out.push({\n      component,\n      observed_version: version,\n      running_count: String(count),\n      source_type: sourceType,\n      source_status: \"current\",\n      observed_at: observedAt,\n      collection_message: \"\"\n    });\n  }\n\n  if (!out.length) {\n    return [unavailableRow(component, observedAt, `No ${component} runtime rows returned`, sourceType)];\n  }\n\n  return out;\n}\n\n\nfunction normalizeOperatorRows(records, observedAt) {\n  const rows = Array.isArray(records) ? records : [];\n  const clusterCountRaw = rows[0]?.cluster_count ?? 0;\n  const clusterCount = Number(clusterCountRaw || 0);\n\n  if (!Number.isFinite(clusterCount) || clusterCount <= 0) {\n    return [{\n      component: \"operator\",\n      observed_version: \"\",\n      running_count: \"0\",\n      source_type: \"dql_kubernetes_cluster_inventory\",\n      source_status: \"not_configured\",\n      observed_at: observedAt,\n      collection_message: \"No Kubernetes clusters detected in tenant\"\n    }];\n  }\n\n  return [{\n    component: \"operator\",\n    observed_version: \"\",\n    running_count: String(clusterCount),\n    source_type: \"dql_kubernetes_cluster_inventory\",\n    source_status: \"partial\",\n    observed_at: observedAt,\n    collection_message: \"Kubernetes clusters detected; operator runtime version source not yet implemented\"\n  }];\n}\n\nfunction normalizeAiSummary(aiResult) {\n  const raw = aiResult?.answer || aiResult?.response || aiResult?.text || aiResult?.output || \"\";\n  const text = String(raw || \"\").trim();\n  if (!text) {\n    return {\n      breaking_changes_summary: \"\",\n      highlights_summary: \"\"\n    };\n  }\n\n  const compact = text.length > 1200 ? `${text.slice(0, 1197)}...` : text;\n  const breakingMatch = compact.match(/BREAKING:\\s*([\\s\\S]*?)(?:HIGHLIGHTS:|$)/i);\n  const highlightsMatch = compact.match(/HIGHLIGHTS:\\s*([\\s\\S]*)$/i);\n\n  const normalizeSection = (value) => String(value || \"\")\n    .split(\"\\n\")\n    .map((line) => line.trim())\n    .filter((line) => line && line !== \"-\")\n    .join(\"\\n\");\n\n  const breaking = normalizeSection(breakingMatch?.[1]);\n  const highlights = normalizeSection(highlightsMatch?.[1]);\n\n  return {\n    breaking_changes_summary: breaking || compact,\n    highlights_summary: highlights || compact\n  };\n}\n\nexport default async function () {\n  const releaseData = await result(\"collect_release_indexes\");\n  const saasData = await result(\"collect_saas_current_version\");\n  const oneagentData = await result(\"collect_oneagent_runtime_distribution\");\n  const activegateData = await result(\"collect_activegate_runtime_distribution\");\n  const operatorData = await result(\"collect_operator_runtime_distribution\");\n  const edgeconnectData = await result(\"collect_edgeconnect_runtime_distribution\");\n  const observedAt = new Date().toISOString();\n\n  let aiData = {};\n  try {\n    aiData = await result(\"ai_summarize_release_notes\");\n  } catch (e) {\n    aiData = {};\n  }\n\n  const aiSummary = normalizeAiSummary(aiData);\n\n  const baseReleaseRows = Array.isArray(releaseData?.release_rows) ? releaseData.release_rows : [];\n  const release_rows = baseReleaseRows.map((r) => ({\n    ...r,\n    breaking_changes_summary: r.is_latest === \"true\" ? aiSummary.breaking_changes_summary : \"\",\n    highlights_summary: r.is_latest === \"true\" ? aiSummary.highlights_summary : \"\"\n  }));\n\n  const oneagentRows = normalizeOneAgent(oneagentData?.records || oneagentData?.result?.records || [], observedAt);\n  const saasRows = rowsFromTaskPayload(saasData, \"saas\", observedAt);\n  const activegateRows = normalizeDistributionRows({\n    component: \"activegate\",\n    records: activegateData?.records || activegateData?.result?.records || [],\n    versionField: \"activegate_version\",\n    countField: \"running_count\",\n    observedAt,\n    sourceType: \"logs_activegate_started_parse\"\n  });\n  const operatorRows = normalizeOperatorRows(operatorData?.records || operatorData?.result?.records || [], observedAt);\n  const edgeconnectRows = rowsFromTaskPayload(edgeconnectData, \"edgeconnect\", observedAt);\n\n  const runtime_rows = [\n    ...saasRows,\n    ...oneagentRows,\n    ...activegateRows,\n    ...operatorRows,\n    ...edgeconnectRows\n  ];\n\n  return { release_rows, runtime_rows, observed_at: observedAt };\n}\n"
+      },
+      "name": "build_lookup_payloads",
+      "position": {
+        "x": 2,
+        "y": 4
+      },
+      "predecessors": [
+        "collect_release_indexes",
+        "collect_saas_current_version",
+        "collect_oneagent_runtime_distribution",
+        "collect_activegate_runtime_distribution",
+        "collect_operator_runtime_distribution",
+        "collect_edgeconnect_runtime_distribution"
+      ]
+    },
+    "upload_release_lookup": {
+      "action": "dynatrace.automations:run-javascript",
+      "conditions": {
+        "states": {
+          "build_lookup_payloads": "SUCCESS"
+        }
+      },
+      "description": "Upload normalized component release rows to /lookups/dt_component_release_status.",
+      "input": {
+        "script": "import { result } from \"@dynatrace-sdk/automation-utils\";\n\nfunction csvCell(v) {\n  const s = String(v ?? \"\");\n  const lf = String.fromCharCode(10);\n  const cr = String.fromCharCode(13);\n  return s.split(\",\").join(\" \").split(lf).join(\" \").split(cr).join(\" \").trim();\n}\n\nfunction toCsv(rows, headers) {\n  const lines = [headers.join(\",\")];\n  for (const row of rows) lines.push(headers.map((h) => csvCell(row[h])).join(\",\"));\n  return `${lines.join(\"\\n\")}\\n`;\n}\n\nasync function uploadLookup({ filePath, lookupField, parsePattern, headers, rows }) {\n  const csv = toCsv(rows, headers);\n  const request = {\n    filePath,\n    lookupField,\n    overwrite: true,\n    displayName: filePath.split(\"/\").pop(),\n    description: \"Generated by Version Intelligence Sync\",\n    skippedRecords: 1,\n    autoFlatten: true,\n    timezone: \"UTC\",\n    locale: \"en_US\",\n    parsePattern\n  };\n\n  const blob = new Blob([csv], { type: \"text/csv\" });\n  const file = new File([blob], `${lookupField}.csv`, { type: \"text/csv\" });\n  const formData = new FormData();\n  formData.append(\"request\", JSON.stringify(request));\n  formData.append(\"content\", file);\n\n  const response = await fetch(\"/platform/storage/resource-store/v1/files/tabular/lookup:upload\", {\n    method: \"POST\",\n    body: formData\n  });\n\n  if (!response.ok) {\n    const body = await response.text();\n    throw new Error(`Lookup upload failed for ${filePath}: ${response.status} ${body}`);\n  }\n  return { filePath, statusCode: response.status, rowCount: rows.length };\n}\n\nexport default async function () {\n  const payload = await result(\"build_lookup_payloads\");\n  const headers = [\"component\", \"released_version\", \"release_status\", \"rollout_start_date\", \"is_latest\", \"is_next_planned\", \"release_url\", \"index_url\", \"fetched_at\", \"breaking_changes_summary\", \"highlights_summary\"];\n  const rows = (payload.release_rows || []).map((r) => ({\n    ...r,\n    breaking_changes_summary: r.breaking_changes_summary || \"\",\n    highlights_summary: r.highlights_summary || \"\"\n  }));\n\n  return await uploadLookup({\n    filePath: \"/lookups/dt_component_release_status\",\n    lookupField: \"component\",\n    parsePattern: \"LD:component ',' LD:released_version ',' LD:release_status ',' LD:rollout_start_date ',' LD:is_latest ',' LD:is_next_planned ',' LD:release_url ',' LD:index_url ',' LD:fetched_at ',' LD:breaking_changes_summary ',' LD:highlights_summary\",\n    headers,\n    rows\n  });\n}\n"
+      },
+      "name": "upload_release_lookup",
+      "position": {
+        "x": 2,
+        "y": 5
+      },
+      "predecessors": [
+        "build_lookup_payloads"
+      ]
+    },
+    "upload_runtime_lookup": {
+      "action": "dynatrace.automations:run-javascript",
+      "conditions": {
+        "states": {
+          "build_lookup_payloads": "SUCCESS"
+        }
+      },
+      "description": "Upload normalized component runtime rows to /lookups/dt_component_runtime_versions.",
+      "input": {
+        "script": "import { result } from \"@dynatrace-sdk/automation-utils\";\n\nfunction csvCell(v) {\n  const s = String(v ?? \"\");\n  const lf = String.fromCharCode(10);\n  const cr = String.fromCharCode(13);\n  return s.split(\",\").join(\" \").split(lf).join(\" \").split(cr).join(\" \").trim();\n}\n\nfunction toCsv(rows, headers) {\n  const lines = [headers.join(\",\")];\n  for (const row of rows) lines.push(headers.map((h) => csvCell(row[h])).join(\",\"));\n  return `${lines.join(\"\\n\")}\\n`;\n}\n\nasync function uploadLookup({ filePath, lookupField, parsePattern, headers, rows }) {\n  const csv = toCsv(rows, headers);\n  const request = {\n    filePath,\n    lookupField,\n    overwrite: true,\n    displayName: filePath.split(\"/\").pop(),\n    description: \"Generated by Version Intelligence Sync\",\n    skippedRecords: 1,\n    autoFlatten: true,\n    timezone: \"UTC\",\n    locale: \"en_US\",\n    parsePattern\n  };\n\n  const blob = new Blob([csv], { type: \"text/csv\" });\n  const file = new File([blob], `${lookupField}.csv`, { type: \"text/csv\" });\n  const formData = new FormData();\n  formData.append(\"request\", JSON.stringify(request));\n  formData.append(\"content\", file);\n\n  const response = await fetch(\"/platform/storage/resource-store/v1/files/tabular/lookup:upload\", {\n    method: \"POST\",\n    body: formData\n  });\n\n  if (!response.ok) {\n    const body = await response.text();\n    throw new Error(`Lookup upload failed for ${filePath}: ${response.status} ${body}`);\n  }\n  return { filePath, statusCode: response.status, rowCount: rows.length };\n}\n\nexport default async function () {\n  const payload = await result(\"build_lookup_payloads\");\n  const headers = [\"component\", \"observed_version\", \"running_count\", \"source_type\", \"source_status\", \"observed_at\", \"collection_message\"];\n  const rows = payload.runtime_rows || [];\n\n  return await uploadLookup({\n    filePath: \"/lookups/dt_component_runtime_versions\",\n    lookupField: \"component\",\n    parsePattern: \"LD:component ',' LD:observed_version ',' LD:running_count ',' LD:source_type ',' LD:source_status ',' LD:observed_at ',' LD:collection_message\",\n    headers,\n    rows\n  });\n}\n"
+      },
+      "name": "upload_runtime_lookup",
+      "position": {
+        "x": 3,
+        "y": 5
+      },
+      "predecessors": [
+        "build_lookup_payloads"
+      ]
+    },
+    "collect_activegate_runtime_distribution": {
+      "action": "dynatrace.automations:execute-dql-query",
+      "description": "Collect ActiveGate runtime version distribution from host logs.",
+      "input": {
+        "query": "fetch logs, from:now()-24h | filter contains(content, \"Dynatrace ActiveGate started.\") | filter isNotNull(host.name) | parse content, \"LD '(' LD:activegate_version ')' LD\" | filter isNotNull(activegate_version) | summarize running_count = countDistinct(host.name), by: { activegate_version } | sort activegate_version desc"
+      },
+      "name": "collect_activegate_runtime_distribution",
+      "position": {
+        "x": 3,
+        "y": 1
+      },
+      "predecessors": []
+    },
+    "collect_operator_runtime_distribution": {
+      "action": "dynatrace.automations:execute-dql-query",
+      "description": "Collect Operator runtime signal by checking Kubernetes cluster inventory presence.",
+      "input": {
+        "query": "fetch dt.entity.kubernetes_cluster | summarize cluster_count = count()"
+      },
+      "name": "collect_operator_runtime_distribution",
+      "position": {
+        "x": 3,
+        "y": 2
+      },
+      "predecessors": []
+    },
+    "collect_edgeconnect_runtime_distribution": {
+      "action": "dynatrace.automations:run-javascript",
+      "description": "Collect edgeconnect runtime version distribution (placeholder until tenant source validation is completed).",
+      "input": {
+        "script": "import { execution } from \"@dynatrace-sdk/automation-utils\";\n\nexport default async function () {\n  await execution();\n  const observed_at = new Date().toISOString();\n  return {\n    runtime_rows: [{\n      component: \"edgeconnect\",\n      observed_version: \"\",\n      running_count: \"0\",\n      source_type: \"pending_source_validation\",\n      source_status: \"unavailable\",\n      observed_at,\n      collection_message: \"Runtime source not yet validated in tenant\"\n    }]\n  };\n}\n"
+      },
+      "name": "collect_edgeconnect_runtime_distribution",
+      "position": {
+        "x": 3,
+        "y": 3
+      },
+      "predecessors": []
+    },
+    "ai_summarize_release_notes": {
+      "action": "dynatrace.davis.copilot.workflow.actions:davis-copilot",
+      "conditions": {
+        "states": {
+          "collect_release_indexes": "SUCCESS"
+        }
+      },
+      "description": "Summarize noteworthy release highlights and possible breaking changes from collected release links.",
+      "input": {
+        "autoTrim": true,
+        "config": "disabled",
+        "instruction": "You are a release analyst. Summarize risk and value clearly.",
+        "prompt": "From the supplementary list of latest component releases, return plain text with EXACTLY these sections and headers:\nBREAKING:\n- <bullet 1>\n- <bullet 2>\nHIGHLIGHTS:\n- <bullet 1>\n- <bullet 2>\nUse concise bullets, avoid speculation, and keep total response under 1200 characters.",
+        "supplementary": "{{ result(\"collect_release_indexes\").summary_prompt }}"
+      },
+      "name": "ai_summarize_release_notes",
+      "position": {
+        "x": 4,
+        "y": 1
+      },
+      "predecessors": [
+        "collect_release_indexes"
+      ]
+    }
+  },
+  "trigger": {
+    "schedule": {
+      "filterParameters": {
+        "earliestStart": "2026-04-27"
+      },
+      "inputs": {},
+      "isActive": true,
+      "isFaulty": false,
+      "nextExecution": "2026-05-16T05:17:00Z",
+      "rule": null,
+      "timezone": "UTC",
+      "trigger": {
+        "cron": "17 5 * * *",
+        "type": "cron"
+      }
+    }
+  },
+  "actor": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "id": "92ebd560-5632-49c1-8f81-0782b40ac4eb"
+}

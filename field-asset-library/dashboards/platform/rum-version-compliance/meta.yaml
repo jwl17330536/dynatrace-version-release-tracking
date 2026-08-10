@@ -1,0 +1,20 @@
+title: "RUM Version Compliance"
+description: >
+  Classifies RUM applications by policy status: on-target, below-target, unsupported, and above-target.
+purpose: >
+  When operations and enablement teams need clear RUM policy posture, this dashboard summarizes compliance status by application so remediation can be prioritized and policy drift can be corrected quickly.
+author: "John Lindley"
+contact: "john.lindley@dynatrace.com"
+asset_type: dashboard
+use_case: platform
+deployment:
+  - SaaS
+tags:
+  - DynatraceAdmin
+  - AIOperations
+setup_instructions: >
+  Import the dashboard JSON into Dynatrace, verify data sources and workflow dependencies,
+  and validate tiles in a live tenant before sharing.
+tenant_url: "<TENANT_DASHBOARD_URL>"
+related_assets:
+  - workflows/version-intelligence-sync.v5.workflow.json

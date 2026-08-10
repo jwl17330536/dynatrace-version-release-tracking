@@ -1,0 +1,182 @@
+{
+  "version": 21,
+  "variables": [],
+  "tiles": {
+    "0": {
+      "type": "markdown",
+      "content": "# RUM Classic JS Library Versions\n\nShows latest JavaScript library version per RUM classic app from workflow events.\n\nExpected events:\n- RUMJSVersion|<app_id>|<js_version>|<fetched_at>\n- RUMJSVersionSyncSummary|<app_count>|<versions_found>|<fetched_at>",
+      "title": ""
+    },
+    "1": {
+      "title": "Apps Synced (Latest Run)",
+      "type": "data",
+      "query": "fetch events | fields ts = timestamp, src = event.properties.source, app_count_raw = event.properties.app_count | filter src == \"rum_classic_api\" and isNotNull(app_count_raw) | sort ts desc | limit 1 | fields app_count = toLong(app_count_raw)",
+      "visualization": "singleValue",
+      "visualizationSettings": {
+        "autoSelectVisualization": false
+      },
+      "querySettings": {
+        "maxResultRecords": 1000,
+        "defaultScanLimitGbytes": 500,
+        "maxResultMegaBytes": 1,
+        "defaultSamplingRatio": 10,
+        "enableSampling": false
+      },
+      "davis": {
+        "enabled": false,
+        "davisVisualization": {
+          "isAvailable": true
+        }
+      }
+    },
+    "2": {
+      "title": "Distinct JS Versions (Latest Run)",
+      "type": "data",
+      "query": "fetch events | fields ts = timestamp, src = event.properties.source, versions_found_raw = event.properties.versions_found | filter src == \"rum_classic_api\" and isNotNull(versions_found_raw) | sort ts desc | limit 1 | fields versions_found = toLong(versions_found_raw)",
+      "visualization": "singleValue",
+      "visualizationSettings": {
+        "autoSelectVisualization": false
+      },
+      "querySettings": {
+        "maxResultRecords": 1000,
+        "defaultScanLimitGbytes": 500,
+        "maxResultMegaBytes": 1,
+        "defaultSamplingRatio": 10,
+        "enableSampling": false
+      },
+      "davis": {
+        "enabled": false,
+        "davisVisualization": {
+          "isAvailable": true
+        }
+      }
+    },
+    "3": {
+      "title": "Last Sync Time (Latest Run)",
+      "type": "data",
+      "query": "fetch events | fields ts = timestamp, src = event.properties.source, fetched_at = event.properties.fetched_at, app_count_raw = event.properties.app_count | filter src == \"rum_classic_api\" and isNotNull(fetched_at) and isNotNull(app_count_raw) | sort ts desc | limit 1 | fields fetched_at",
+      "visualization": "singleValue",
+      "visualizationSettings": {
+        "autoSelectVisualization": false
+      },
+      "querySettings": {
+        "maxResultRecords": 1000,
+        "defaultScanLimitGbytes": 500,
+        "maxResultMegaBytes": 1,
+        "defaultSamplingRatio": 10,
+        "enableSampling": false
+      },
+      "davis": {
+        "enabled": false,
+        "davisVisualization": {
+          "isAvailable": true
+        }
+      }
+    },
+    "4": {
+      "title": "Apps by JS Library Version (Latest Per App)",
+      "type": "data",
+      "query": "fetch events | fields ts = timestamp, src = event.properties.source, app_id = event.properties.application_id, js_version = event.properties.js_library_version | filter src == \"rum_classic_api\" and isNotNull(app_id) and isNotNull(js_version) | sort ts desc | dedup app_id | summarize apps = count(), by: {js_version} | sort apps desc, js_version desc",
+      "visualization": "categoricalBarChart",
+      "visualizationSettings": {
+        "autoSelectVisualization": false
+      },
+      "querySettings": {
+        "maxResultRecords": 1000,
+        "defaultScanLimitGbytes": 500,
+        "maxResultMegaBytes": 3,
+        "defaultSamplingRatio": 10,
+        "enableSampling": false
+      },
+      "davis": {
+        "enabled": false,
+        "davisVisualization": {
+          "isAvailable": true
+        }
+      }
+    },
+    "5": {
+      "title": "Latest JS Library Version by Application",
+      "type": "data",
+      "query": "fetch events | fields ts = timestamp, src = event.properties.source, app_id = event.properties.application_id, js_version = event.properties.js_library_version, fetched_at = event.properties.fetched_at, app_name = event.properties.application_name | fieldsAdd app_name = coalesce(app_name, app_id) | filter src == \"rum_classic_api\" and isNotNull(app_id) and isNotNull(js_version) | sort ts desc | dedup app_id | fields app_name, app_id, js_version, fetched_at, last_seen = ts | sort app_name asc",
+      "visualization": "table",
+      "visualizationSettings": {
+        "autoSelectVisualization": false,
+        "table": {
+          "columnWidths": {
+            "[\"app_name\"]": 280,
+            "[\"app_id\"]": 260,
+            "[\"js_version\"]": 180,
+            "[\"fetched_at\"]": 240,
+            "[\"last_seen\"]": 240
+          }
+        }
+      },
+      "querySettings": {
+        "maxResultRecords": 5000,
+        "defaultScanLimitGbytes": 500,
+        "maxResultMegaBytes": 10,
+        "defaultSamplingRatio": 10,
+        "enableSampling": false
+      },
+      "davis": {
+        "enabled": false,
+        "davisVisualization": {
+          "isAvailable": true
+        }
+      }
+    }
+  },
+  "layouts": {
+    "0": {
+      "x": 0,
+      "y": 0,
+      "w": 20,
+      "h": 2
+    },
+    "1": {
+      "x": 0,
+      "y": 2,
+      "w": 6,
+      "h": 4
+    },
+    "2": {
+      "x": 6,
+      "y": 2,
+      "w": 6,
+      "h": 4
+    },
+    "3": {
+      "x": 12,
+      "y": 2,
+      "w": 8,
+      "h": 4
+    },
+    "4": {
+      "x": 0,
+      "y": 6,
+      "w": 20,
+      "h": 6
+    },
+    "5": {
+      "x": 0,
+      "y": 12,
+      "w": 20,
+      "h": 10
+    }
+  },
+  "settings": {
+    "gridLayout": {
+      "mode": "responsive",
+      "columnsCount": 20
+    },
+    "defaultTimeframe": {
+      "value": {
+        "from": "now()-30d",
+        "to": "now()"
+      },
+      "enabled": true
+    }
+  },
+  "annotations": []
+}

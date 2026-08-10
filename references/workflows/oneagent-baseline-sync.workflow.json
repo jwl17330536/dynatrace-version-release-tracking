@@ -1,0 +1,76 @@
+{
+  "id": "f7331158-7c17-46b9-8618-8b12992edea7",
+  "title": "OneAgent Baseline Sync",
+  "description": "Daily workflow: fetch latest OneAgent release + ESS oldest supported from docs and store as custom event.",
+  "actor": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "owner": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "ownerType": "USER",
+  "isPrivate": false,
+  "schemaVersion": 4,
+  "trigger": {
+    "schedule": {
+      "isActive": true,
+      "trigger": {
+        "cron": "17 5 * * *",
+        "type": "cron"
+      },
+      "rule": null,
+      "filterParameters": {
+        "earliestStart": "2026-04-30"
+      },
+      "timezone": "UTC",
+      "inputs": {}
+    }
+  },
+  "result": null,
+  "type": "STANDARD",
+  "input": {},
+  "hourlyExecutionLimit": 1000,
+  "guide": null,
+  "tasks": {
+    "compute_versions": {
+      "name": "compute_versions",
+      "input": {
+        "script": "import { execution } from \"@dynatrace-sdk/automation-utils\";\n\nasync function getText(url) {\n  const resp = await fetch(url);\n  if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);\n  return await resp.text();\n}\n\nexport default async function () {\n  await execution();\n\n  const sitemap = await getText('https://docs.dynatrace.com/docs/sitemap.xml');\n  const matches = [...sitemap.matchAll(/oneagent\\/sprint-(\\d+)/g)].map(m => Number(m[1]));\n  if (!matches.length) throw new Error('No sprint links found in docs sitemap');\n\n  const latestSprint = Math.max(...matches);\n  const latestRelease = `1.${latestSprint}`;\n  const sprintUrl = `https://docs.dynatrace.com/docs/whats-new/oneagent/sprint-${latestSprint}`;\n  const sprintHtml = await getText(sprintUrl);\n\n  const essMatch = sprintHtml.match(/Enterprise Success and Support[\\s\\S]*?(1\\.\\d{3})/i);\n  if (!essMatch) throw new Error('Could not parse ESS oldest supported version');\n  const oldestSupportedEss = essMatch[1];\n\n  return {\n    latest_release: latestRelease,\n    oldest_supported_ess: oldestSupportedEss,\n    fetched_at: new Date().toISOString(),\n    source_url: sprintUrl\n  };\n}\n"
+      },
+      "action": "dynatrace.automations:run-javascript",
+      "position": {
+        "x": 0,
+        "y": 1
+      },
+      "description": "Compute latest release and ESS oldest supported from docs pages.",
+      "predecessors": []
+    },
+    "store_baseline_event": {
+      "name": "store_baseline_event",
+      "input": {
+        "url": "https://oei3894h.sprint.dynatracelabs.com/api/v2/events/ingest",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "payload": "{\n  \"eventType\": \"CUSTOM_ANNOTATION\",\n  \"title\": \"OneAgentBaseline|{{ result('compute_versions').latest_release }}|{{ result('compute_versions').oldest_supported_ess }}|{{ result('compute_versions').fetched_at }}\",\n  \"description\": \"OneAgent release baseline sync from {{ result('compute_versions').source_url }}\",\n  \"properties\": {\n    \"latest_release\": \"{{ result('compute_versions').latest_release }}\",\n    \"oldest_supported_ess\": \"{{ result('compute_versions').oldest_supported_ess }}\",\n    \"fetched_at\": \"{{ result('compute_versions').fetched_at }}\",\n    \"source_url\": \"{{ result('compute_versions').source_url }}\"\n  }\n}",
+        "credential": {
+          "type": "token",
+          "tokenPrefix": "Api-Token",
+          "credentialId": "CREDENTIALS_VAULT-YOUR_CREDENTIAL_ID"
+        },
+        "failOnResponseCodes": "400-599"
+      },
+      "action": "dynatrace.automations:http-function",
+      "position": {
+        "x": 0,
+        "y": 2
+      },
+      "conditions": {
+        "states": {
+          "compute_versions": "SUCCESS"
+        }
+      },
+      "description": "Store baseline values as a custom annotation event for dashboard queries.",
+      "predecessors": [
+        "compute_versions"
+      ]
+    }
+  }
+}
