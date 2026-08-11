@@ -2,7 +2,7 @@
 
 ## Migrated (Active Reuse)
 - workflows/version-intelligence-sync.v1.workflow.json
-  - Source: dynatrace-private-ops/workflows/dt-version-checker.v9.workflow.json
+  - Legacy source: dynatrace-private-ops/workflows/dt-version-checker.v9.workflow.json
   - Reason: current production baseline with OneAgent + RUM collection.
   - Compatibility note: migrated initially as `release-tracker.v1.workflow.json`, then normalized to canonical naming.
 

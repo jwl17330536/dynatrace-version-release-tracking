@@ -6,7 +6,7 @@ PREFLIGHT_ARGS ?=
 .PHONY: help static live preflight preflight-static preflight-v5 preflight-exec self-check ci-check release-readiness
 
 help:
-	@echo "dt-version-checker automation targets"
+	@echo "dynatrace-version-release-tracking automation targets"
 	@echo ""
 	@echo "Core smoke targets:"
 	@echo "  make static            # Local static CI smoke flow"

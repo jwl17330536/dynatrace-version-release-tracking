@@ -81,6 +81,6 @@
 - If section parsing fails, the compact AI output is used as a fallback to avoid empty enrichment.
 
 ## Ownership
-- Repository owner: dt-version-checker
+- Repository owner: dynatrace-version-release-tracking
 - Operational owner: platform observability workflow maintainers
 - Change policy: vN+1 for workflow revisions; one active scheduled workflow only.

@@ -1,7 +1,7 @@
 # OneAgent Baseline Sync v2 (with RUM Classic JS Versions)
 
 Workflow file:
-- `local-notes/dt-version-checker.workflow.json`
+- `local-notes/dynatrace-version-release-tracking.workflow.json`
 
 Dashboard file:
 - `local-notes/rum-version-compliance-dashboard.json`
