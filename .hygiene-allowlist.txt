@@ -1,0 +1,4 @@
+# Optional regex allowlist for scripts/repo-hygiene-check.sh
+# One regex per line. Matches are excluded from failures.
+# Example:
+# ^docs/legacy/.*

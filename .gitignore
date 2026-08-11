@@ -13,3 +13,15 @@ reports/
 __pycache__/
 *.pyc
 venv/
+
+# Shared secret and local auth hygiene
+.env
+.env.local
+.env.mcp
+.env.*.local
+.secrets.env
+*.secrets.env
+*.token
+*.tokens
+**/.tokens.json
+**/.dt-app/

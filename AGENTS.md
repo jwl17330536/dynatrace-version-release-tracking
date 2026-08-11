@@ -18,9 +18,11 @@ Every workflow version must include an operator guide in Dynatrace UI Workflow G
 
 Source markdown for guide content is maintained in:
 
-- `docs/WORKFLOW_GUIDE_V9.md`
+- `docs/WORKFLOW_GUIDE_V10.md`
 
 If tooling cannot serialize guide content, add it manually in Workflow options after apply.
+
+In this tenant, `dtctl get workflow` currently does not round-trip `guide`; always verify and re-paste guide markdown after apply.
 
 ## Publishing expectations
 

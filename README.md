@@ -9,9 +9,10 @@ Canonical repository for the Dynatrace Version Intelligence release-tracking pac
 - Provide a portable workflow + dashboard template other teams can reuse.
 
 ## Canonical Assets
-- Workflow: `workflows/version-intelligence-sync.v9.workflow.json`
-- Dashboard source artifact: `dashboards/release-tracking-dashboard.v9.json`
-- Dashboard live export snapshot: `dashboards/release-tracking-dashboard.v9.live.export.json`
+- Workflow: `workflows/version-intelligence-sync.v10.workflow.json`
+- Workflow live export snapshot: `workflows/version-intelligence-sync.v10.live.export.workflow.json`
+- Dashboard source artifact: `dashboards/release-tracking-dashboard.v10.json`
+- Dashboard live export snapshot: `dashboards/release-tracking-dashboard.v10.live.export.json`
 
 ## Mandatory Version Alignment Policy
 This repo enforces a strict lockstep versioning policy:
@@ -25,22 +26,42 @@ This repo enforces a strict lockstep versioning policy:
 See `docs/VERSION_ALIGNMENT_POLICY.md` for full rules and operational checks.
 
 ## Workflow Guide
-Dynatrace Workflow Guide content for v9 is maintained in:
+Dynatrace Workflow Guide content for v10 is maintained in:
 
-- `docs/WORKFLOW_GUIDE_V9.md`
+- `docs/WORKFLOW_GUIDE_V10.md`
 
-Note: current `dtctl` export payloads do not include a `guide` property. After importing/applying in a tenant, paste the markdown from `docs/WORKFLOW_GUIDE_V9.md` into **Workflow guide** in the UI (Workflow options).
+Note: current `dtctl` export payloads do not include a `guide` property in this tenant. After importing/applying in a tenant, paste the markdown from `docs/WORKFLOW_GUIDE_V10.md` into **Workflow guide** in the UI (Workflow options).
 
 ## Tenant Portability
 Before enabling schedule in a new tenant, update workflow inputs:
 
-1. `releaseDashboardV9Id`
+1. `releaseDashboardV10Id`
 2. `apiTokenVaultId`
 3. `rumTokenVaultId`
 4. `platformBearerToken` or `platformTokenVaultId` (platform JWT credential)
 5. Optional lookup paths and parser depth
 
 Do not commit live bearer token values.
+
+Set these in Dynatrace under `Workflow options -> Trigger -> Inputs`.
+
+Minimum input requirements:
+
+1. `apiTokenVaultId`
+	Credential-vault ID for an Environment API token used by `/api/v1/config/clusterversion`.
+	Required scope: `ReadConfig`.
+2. `rumTokenVaultId`
+	Credential-vault ID for an Environment API token used by `/api/v1/rum/manualApps` and `/api/v2/events/ingest`.
+	Required scopes: `ReadConfig`, `ReadSyntheticData`, `events.ingest`.
+3. `platformTokenVaultId`
+	Credential-vault ID for a platform bearer/JWT token used by `/platform/document/v1/documents/*`.
+	Required rights: ability to read and update dashboard documents.
+4. `platformBearerToken`
+	Temporary manual-run override only when vault-backed platform auth is unavailable.
+5. `releaseDashboardV10Id`
+	Dashboard document UUID from the dashboard URL or `dtctl get dashboard <id-or-name> -o json --plain`.
+
+In v10, placeholder values like `<SET_PLATFORM_BEARER_TOKEN>` are ignored and a configured `platformTokenVaultId` takes precedence.
 
 ## Repository Layout
 - `workflows/`: versioned workflow JSON artifacts and live exports.

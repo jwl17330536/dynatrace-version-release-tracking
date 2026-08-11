@@ -26,10 +26,14 @@ This policy governs Version Intelligence workflow and dashboard changes.
 2. Dashboard name and file name match `vN+1`.
 3. Workflow input key and resolved ID point to dashboard `vN+1`.
 4. No stale references to earlier version names in update-task keys/messages.
-5. Latest execution succeeds and updates dashboard `vN+1` timestamp.
+5. Latest execution updates dashboard `vN+1` timestamp and key markdown headers.
+6. For manual `dtctl exec`, pass required inputs using `--params` (manual execution does not inherit schedule static inputs).
+7. Re-verify Workflow Guide after apply (guide may not round-trip in this tenant's export payloads).
 
 ## Security requirements
 
 1. Do not commit runtime bearer token literals.
 2. Use placeholders in committed workflow files.
 3. Supply credentials at runtime (vault or secure environment injection).
+4. Prefer credential-vault IDs over raw token inputs for scheduled workflows.
+5. Verify placeholder token fields cannot override a configured vault-backed credential.
