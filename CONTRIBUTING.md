@@ -20,8 +20,15 @@ Tracked files that must become local-only should be untracked before relying on 
 
 ```bash
 make self-check
+python3 scripts/run_validation_suite.py --profile canonical
 make static
 bash scripts/run_ci_smoke.sh static
+```
+
+Run legacy compatibility checks only when changing v4/v5 compatibility assets:
+
+```bash
+python3 scripts/run_validation_suite.py --profile v5
 ```
 
 ## Documentation
