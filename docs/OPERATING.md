@@ -15,6 +15,7 @@ Follow the SE Field Asset Library CONTRIBUTING requirements.
 ## Validation Guardrails
 - Run `python3 scripts/run_validation_suite.py --profile all` before PR or deployment.
 - For automation/CI parsing, use `python3 scripts/run_validation_suite.py --json`.
+- For canonical install artifact validation (v10), use `python3 scripts/run_validation_suite.py --profile canonical`.
 - For faster v5-only verification, use `python3 scripts/run_validation_suite.py --profile v5`.
 - For CI-safe static checks without tenant credentials, use `python3 scripts/run_validation_suite.py --profile ci-static --json`.
 - For one-command preflight report generation, use `python3 scripts/run_v5_preflight.py`.
@@ -34,7 +35,9 @@ Follow the SE Field Asset Library CONTRIBUTING requirements.
 - The suite now includes `scripts/validate_release_tracking_v5_e2e.py`.
 - The suite now includes `scripts/validate_dashboard_layout_parity.py`.
 - The suite now includes `scripts/validate_v5_actionable_tiles.py`.
+- The suite now includes `scripts/validate_canonical_assets.py` for canonical v10 artifact checks.
 - Query smoke tests run for both `release-tracking-dashboard.v4.json` and `release-tracking-dashboard.v5.json`.
+- v4/v5 query and layout checks are retained as legacy compatibility gates for contributor regression detection.
 - Static contract validation requires workflow v5 to publish guidance fields (`risk_priority`, `highlight_focus`, `action_hint`) and dashboard v5 queue/risk tiles to reference expected actionable output columns.
 - End-to-end v5 contract validation verifies workflow tokens, lookup enrichment presence, dashboard actionable tile outputs, and layout parity in one gate.
 - Preflight runner writes machine-readable and human-readable artifacts by default:

@@ -5,6 +5,7 @@ import subprocess
 import sys
 
 ALL_CHECKS = [
+    ("Canonical v10 asset checks", ["python3", "scripts/validate_canonical_assets.py"]),
     ("Workflow v5 contract checks", ["python3", "scripts/validate_workflow_v5_contract.py"]),
     ("Workflow/dashboard v5 static contract checks", ["python3", "scripts/validate_v5_contract_static.py"]),
     ("Release tracking v5 end-to-end checks", ["python3", "scripts/validate_release_tracking_v5_e2e.py"]),
@@ -33,6 +34,7 @@ ALL_CHECKS = [
 ]
 
 V5_PROFILE_CHECKS = [
+    ("Canonical v10 asset checks", ["python3", "scripts/validate_canonical_assets.py"]),
     ("Workflow v5 contract checks", ["python3", "scripts/validate_workflow_v5_contract.py"]),
     ("Workflow/dashboard v5 static contract checks", ["python3", "scripts/validate_v5_contract_static.py"]),
     ("Release tracking v5 end-to-end checks", ["python3", "scripts/validate_release_tracking_v5_e2e.py"]),
@@ -51,9 +53,14 @@ V5_PROFILE_CHECKS = [
 ]
 
 CI_STATIC_PROFILE_CHECKS = [
+    ("Canonical v10 asset checks", ["python3", "scripts/validate_canonical_assets.py"]),
     ("Workflow v5 contract checks", ["python3", "scripts/validate_workflow_v5_contract.py"]),
     ("Workflow/dashboard v5 static contract checks", ["python3", "scripts/validate_v5_contract_static.py"]),
     ("Dashboard layout parity checks", ["python3", "scripts/validate_dashboard_layout_parity.py"]),
+]
+
+CANONICAL_PROFILE_CHECKS = [
+    ("Canonical v10 asset checks", ["python3", "scripts/validate_canonical_assets.py"]),
 ]
 
 
@@ -92,7 +99,7 @@ def parse_args():
     )
     parser.add_argument(
         "--profile",
-        choices=["all", "v5", "ci-static"],
+        choices=["all", "v5", "ci-static", "canonical"],
         default="all",
         help="validation profile to run (default: all)",
     )
@@ -107,6 +114,8 @@ def main() -> int:
         checks = V5_PROFILE_CHECKS
     elif args.profile == "ci-static":
         checks = CI_STATIC_PROFILE_CHECKS
+    elif args.profile == "canonical":
+        checks = CANONICAL_PROFILE_CHECKS
     else:
         checks = ALL_CHECKS
 
