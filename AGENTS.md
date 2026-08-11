@@ -31,3 +31,11 @@ This repository is intended for public reuse and iteration.
 1. Keep tenant-specific values as placeholders.
 2. Keep setup and troubleshooting instructions current.
 3. Preserve previous version files for rollback traceability.
+
+## Public Standards Alignment
+
+1. Keep one canonical end-user install path in `README.md` and `QUICK_START.md`.
+2. Keep contributor-only workflows in `CONTRIBUTING.md`.
+3. Keep local/private scaffolding untracked (`.local.*`, `local-only/`, private notes).
+4. Keep this repository standalone with no required dependency on private/internal sibling repos.
+5. Keep strict PII/secret checks and required branch protections green before release.

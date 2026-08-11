@@ -8,6 +8,19 @@ Canonical repository for the Dynatrace Version Intelligence release-tracking pac
 - Update a markdown-card dashboard for operational release review.
 - Provide a portable workflow + dashboard template other teams can reuse.
 
+## Repository Standards
+
+1. Canonical user install path: `README.md` + `QUICK_START.md`.
+2. Contributor workflow: `CONTRIBUTING.md`.
+3. Release history: `CHANGELOG.md`.
+4. This repository is standalone and does not require `dynatrace-infrastructure-observability-framework`.
+
+## Start Here
+
+1. Fast install path: `QUICK_START.md`.
+2. Canonical runtime and setup details: this `README.md`.
+3. Developer iteration and validation workflow: `CONTRIBUTING.md`.
+
 ## Canonical Assets
 - Workflow: `workflows/version-intelligence-sync.v10.workflow.json`
 - Workflow live export snapshot: `workflows/version-intelligence-sync.v10.live.export.workflow.json`
