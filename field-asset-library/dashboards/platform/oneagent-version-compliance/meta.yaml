@@ -3,8 +3,8 @@ description: >
   Shows installed OneAgent versions and baseline comparison from workflow-collected release data.
 purpose: >
   When platform teams need to quickly detect OneAgent version drift and support risk, this dashboard highlights current host version distribution against known baseline versions to reduce upgrade triage time.
-author: "John Lindley"
-contact: "john.lindley@dynatrace.com"
+author: "Platform Engineering Team"
+contact: "platform-team@example.com"
 asset_type: dashboard
 use_case: platform
 deployment:

@@ -3,8 +3,8 @@ description: >
   Cross-component view for SaaS, OneAgent, ActiveGate, Operator, and EdgeConnect current versus published release status.
 purpose: >
   When administrators need one place to compare currently running Dynatrace component versions against current and upcoming published releases, this dashboard reduces manual release-note correlation and rollout planning effort.
-author: "John Lindley"
-contact: "john.lindley@dynatrace.com"
+author: "Platform Engineering Team"
+contact: "platform-team@example.com"
 asset_type: dashboard
 use_case: platform
 deployment:

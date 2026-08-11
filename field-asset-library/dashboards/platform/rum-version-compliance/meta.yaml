@@ -3,8 +3,8 @@ description: >
   Classifies RUM applications by policy status: on-target, below-target, unsupported, and above-target.
 purpose: >
   When operations and enablement teams need clear RUM policy posture, this dashboard summarizes compliance status by application so remediation can be prioritized and policy drift can be corrected quickly.
-author: "John Lindley"
-contact: "john.lindley@dynatrace.com"
+author: "Platform Engineering Team"
+contact: "platform-team@example.com"
 asset_type: dashboard
 use_case: platform
 deployment:

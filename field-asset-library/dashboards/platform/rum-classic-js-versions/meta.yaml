@@ -3,8 +3,8 @@ description: >
   Shows latest RUM Classic JavaScript library versions per application and run summary metrics.
 purpose: >
   When teams need to validate RUM classic instrumentation consistency across applications, this dashboard exposes latest JS library versions and sync status so gaps are detected before they impact user monitoring.
-author: "John Lindley"
-contact: "john.lindley@dynatrace.com"
+author: "Platform Engineering Team"
+contact: "platform-team@example.com"
 asset_type: dashboard
 use_case: platform
 deployment:
