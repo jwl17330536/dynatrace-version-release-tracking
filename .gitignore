@@ -5,9 +5,18 @@ reports/
 # Local temporary build/scratch artifacts
 .tmp/
 .tmp_*
+scratch/
+tmp/
+temp/
 
 # Local editor/runtime artifacts
 .DS_Store
+
+# Local scaffolding and private notes
+.local/
+local-only/
+docs/local-only/
+*.local.md
 
 # Python cache
 __pycache__/
@@ -19,6 +28,7 @@ venv/
 .env.local
 .env.mcp
 .env.*.local
+.envrc
 .secrets.env
 *.secrets.env
 *.token
