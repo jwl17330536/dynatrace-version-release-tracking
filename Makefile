@@ -1,22 +1,23 @@
 SHELL := /bin/bash
 
-PROFILE ?= v5
+PROFILE ?= canonical
 PREFLIGHT_ARGS ?=
 
-.PHONY: help static live preflight preflight-static preflight-v5 preflight-exec self-check ci-check release-readiness
+.PHONY: help static live preflight preflight-static preflight-v5 preflight-legacy preflight-exec self-check ci-check release-readiness
 
 help:
 	@echo "dynatrace-version-release-tracking automation targets"
 	@echo ""
 	@echo "Core smoke targets:"
 	@echo "  make static            # Local static CI smoke flow"
-	@echo "  make live              # Local live-v5 CI smoke flow (requires DT_ENVIRONMENT + DT_API_TOKEN)"
+	@echo "  make live              # Local live legacy-compatibility CI smoke flow (requires DT_ENVIRONMENT + DT_API_TOKEN)"
 	@echo ""
 	@echo "Preflight targets:"
 	@echo "  make preflight PROFILE=canonical"
-	@echo "  make preflight PROFILE=v5"
+	@echo "  make preflight PROFILE=v5   # legacy compatibility profile"
 	@echo "  make preflight PROFILE=ci-static"
-	@echo "  make preflight-exec    # Preflight with workflow execution"
+	@echo "  make preflight-legacy  # Legacy compatibility preflight"
+	@echo "  make preflight-exec    # Legacy compatibility preflight with workflow execution"
 	@echo ""
 	@echo "Quality gates:"
 	@echo "  make self-check        # Shell syntax + Python compile + workflow YAML parse"
@@ -36,6 +37,9 @@ preflight-static:
 	$(MAKE) preflight PROFILE=ci-static
 
 preflight-v5:
+	$(MAKE) preflight PROFILE=v5
+
+preflight-legacy:
 	$(MAKE) preflight PROFILE=v5
 
 preflight-exec:

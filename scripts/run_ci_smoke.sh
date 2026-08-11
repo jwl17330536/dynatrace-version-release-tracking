@@ -11,10 +11,10 @@ Modes:
     Runs local static CI smoke flow.
 
   live
-    Runs local live-v5 CI smoke flow (requires DT_ENVIRONMENT and DT_API_TOKEN).
+    Runs local live legacy-compatibility CI smoke flow (requires DT_ENVIRONMENT and DT_API_TOKEN).
 
   preflight
-    Runs v5 preflight with optional arguments passed through.
+    Runs preflight with optional arguments passed through.
 
 Examples:
   bash scripts/run_ci_smoke.sh static
@@ -52,7 +52,7 @@ case "$mode" in
     ;;
 
   preflight)
-    exec python3 scripts/run_v5_preflight.py "$@"
+    exec python3 scripts/run_preflight.py "$@"
     ;;
 
   -h|--help|help)

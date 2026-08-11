@@ -100,8 +100,8 @@ def parse_args():
     parser.add_argument(
         "--profile",
         choices=["all", "v5", "ci-static", "canonical"],
-        default="all",
-        help="validation profile to run (default: all)",
+        default="canonical",
+        help="validation profile to run (default: canonical)",
     )
     return parser.parse_args()
 

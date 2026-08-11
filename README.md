@@ -100,7 +100,7 @@ In v10, placeholder values like `<SET_PLATFORM_BEARER_TOKEN>` are ignored and a 
 - `make static`
 - `make ci-check`
 - `python3 scripts/run_validation_suite.py --profile canonical` (canonical v10 assets)
-- `python3 scripts/run_validation_suite.py --profile v5` (legacy compatibility checks)
+- `python3 scripts/run_validation_suite.py --profile v5` (legacy compatibility checks, only when changing v4/v5 assets)
 
 For local CI smoke:
 - `bash scripts/run_ci_smoke.sh static`
