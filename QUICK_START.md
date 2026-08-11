@@ -11,6 +11,13 @@
 
 ## Install
 
+Required artifacts only:
+
+1. `workflows/version-intelligence-sync.v10.workflow.json`
+2. `dashboards/release-tracking-dashboard.v10.json`
+
+Older `v1`-`v9` assets are not needed for initial installation.
+
 1. Import workflow artifact:
 - `workflows/version-intelligence-sync.v10.workflow.json`
 2. Import dashboard artifact:

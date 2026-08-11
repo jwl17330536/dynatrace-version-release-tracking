@@ -27,6 +27,16 @@ Canonical repository for the Dynatrace Version Intelligence release-tracking pac
 - Dashboard source artifact: `dashboards/release-tracking-dashboard.v10.json`
 - Dashboard live export snapshot: `dashboards/release-tracking-dashboard.v10.live.export.json`
 
+Only these v10 assets are required for first-time install.
+
+## Install Boundary
+
+For install and runtime setup, ignore older version files (`v1`-`v9`) unless you are doing historical comparison or rollback analysis.
+
+Historical assets remain in this repository for traceability and contributor validation workflows.
+
+See `docs/HISTORICAL_ASSETS.md` for details.
+
 ## Mandatory Version Alignment Policy
 This repo enforces a strict lockstep versioning policy:
 
@@ -77,8 +87,8 @@ Minimum input requirements:
 In v10, placeholder values like `<SET_PLATFORM_BEARER_TOKEN>` are ignored and a configured `platformTokenVaultId` takes precedence.
 
 ## Repository Layout
-- `workflows/`: versioned workflow JSON artifacts and live exports.
-- `dashboards/`: versioned dashboard JSON artifacts and live exports.
+- `workflows/`: canonical v10 install artifact plus historical versioned workflow JSON artifacts.
+- `dashboards/`: canonical v10 install artifact plus historical versioned dashboard JSON artifacts.
 - `docs/`: runbooks, architecture notes, guide templates, version policy.
 - `scripts/`: validation and CI helper scripts.
 - `field-asset-library/`: contribution-ready dashboard packaging.
