@@ -4,7 +4,7 @@
 Avoid duplicate version-checking assets by reusing existing work first.
 
 ## Reused from dynatrace-private-ops
-- Workflow: version-intelligence-sync.v9
+- Workflow lineage: version-intelligence-sync.v9 (source) -> canonical version-intelligence-sync.v10 (current)
 - Dashboards: oneagent-version-dashboard, rum-classic-js-version-dashboard, rum-version-compliance-dashboard.v3
 - Docs: oneagent-baseline-rum-classic-sync.README
 

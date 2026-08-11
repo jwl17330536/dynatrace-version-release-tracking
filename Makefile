@@ -13,6 +13,7 @@ help:
 	@echo "  make live              # Local live-v5 CI smoke flow (requires DT_ENVIRONMENT + DT_API_TOKEN)"
 	@echo ""
 	@echo "Preflight targets:"
+	@echo "  make preflight PROFILE=canonical"
 	@echo "  make preflight PROFILE=v5"
 	@echo "  make preflight PROFILE=ci-static"
 	@echo "  make preflight-exec    # Preflight with workflow execution"
@@ -42,7 +43,7 @@ preflight-exec:
 
 self-check:
 	bash -n scripts/run_ci_smoke.sh scripts/run_ci_static_smoke.sh scripts/run_ci_live_smoke.sh
-	python3 -m py_compile scripts/run_validation_suite.py scripts/run_v5_preflight.py scripts/write_validation_summary.py scripts/run_release_readiness.py
+	python3 -m py_compile scripts/run_validation_suite.py scripts/validate_canonical_assets.py scripts/run_v5_preflight.py scripts/write_validation_summary.py scripts/run_release_readiness.py
 	ruby -e 'require "yaml"; YAML.load_file(".github/workflows/release-tracking-validation.yml"); puts "YAML OK"'
 	python3 scripts/write_validation_summary.py --report-path reports/validation/nonexistent.json --title "Self-check Summary Probe" > /dev/null
 	@echo "Self-check passed"
