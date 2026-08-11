@@ -44,7 +44,7 @@
     "store_baseline_event": {
       "name": "store_baseline_event",
       "input": {
-        "url": "https://oei3894h.sprint.dynatracelabs.com/api/v2/events/ingest",
+        "url": "https://your-tenant.sprint.dynatracelabs.com/api/v2/events/ingest",
         "method": "POST",
         "headers": {
           "Content-Type": "application/json"
