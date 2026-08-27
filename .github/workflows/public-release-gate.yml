@@ -1,4 +1,4 @@
-name: Public Release Gate
+name: Release Tracking — public gate
 
 on:
   pull_request:
