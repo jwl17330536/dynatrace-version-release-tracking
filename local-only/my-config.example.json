@@ -1,6 +1,7 @@
 {
   "releaseDashboardV11Id": "<YOUR_DASHBOARD_UUID>",
   "dashboardId": "<YOUR_DASHBOARD_UUID>",
+  "ownerId": "<YOUR_DYNATRACE_USER_UUID>",
   "apiTokenVaultId": "CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx",
   "rumTokenVaultId": "CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx",
   "platformTokenVaultId": "CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx"

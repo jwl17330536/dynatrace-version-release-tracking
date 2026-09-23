@@ -51,13 +51,21 @@ def load_json(path: str):
 
 def apply_config_to_workflow(workflow: dict, config: dict) -> dict:
     merged = copy.deepcopy(workflow)
+
+    # Inject owner UUID if provided
+    if "ownerId" in config:
+        merged["owner"] = config["ownerId"]
+
     trigger = merged.setdefault("trigger", {})
-    inputs = trigger.setdefault("inputs", {})
+    # Scheduled workflows nest inputs under trigger.schedule.inputs
+    schedule = trigger.setdefault("schedule", {})
+    inputs = schedule.setdefault("inputs", {})
 
     # Inject any config key that already exists as a trigger input (version-agnostic)
+    skip_keys = {"dashboardId", "ownerId"}
     for key, value in config.items():
-        if key == "dashboardId":
-            continue  # dashboardId is for dashboard deploy, not workflow inputs
+        if key in skip_keys:
+            continue
         if key in inputs:
             entry = inputs[key]
             if isinstance(entry, dict):
