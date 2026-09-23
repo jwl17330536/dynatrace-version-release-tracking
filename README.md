@@ -32,22 +32,21 @@ Two files are all you need for first-time setup:
 
 | File | Purpose |
 |---|---|
-| `workflows/version-intelligence-sync.v10.workflow.json` | The automation workflow |
-| `dashboards/release-tracking-dashboard.v10.json` | The dashboard |
+| `workflows/version-intelligence-sync.v12.workflow.json` | The automation workflow |
+| `dashboards/release-tracking-dashboard.v12.json` | The dashboard |
 
-Older `v1`–`v9` files stay in the repo for rollback traceability only — you do not need them for installation.
+Older `v1`–`v11` files stay in the repo for rollback traceability only — you do not need them for installation.
 
 ---
 
 ## Repository layout
 
 ```
-workflows/          canonical v10 workflow + historical versions
-dashboards/         canonical v10 dashboard + historical versions
+workflows/          canonical v12 workflow + historical versions
+dashboards/         canonical v12 dashboard + historical versions
 docs/               operator and developer guides, runbooks, architecture notes
   images/           screenshots
 scripts/            validation and deploy helpers
-field-asset-library/ packaged assets for the SE Asset Library
 references/         historical workflow snapshots for traceability
 ```
 

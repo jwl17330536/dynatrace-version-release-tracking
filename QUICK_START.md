@@ -15,7 +15,7 @@ You need four values from your Dynatrace tenant. Gather these first.
 | `apiTokenVaultId` | Credential Vault ID for an API token with `ReadConfig` | Settings → Credential Vault → copy the **credential ID** (not the token value) |
 | `rumTokenVaultId` | Credential Vault ID for an API token with `ReadConfig`, `ReadSyntheticData`, `events.ingest` | Same as above |
 | `platformTokenVaultId` | Credential Vault ID for a platform/JWT token that can read and write dashboard documents | Same as above |
-| `releaseDashboardV10Id` | The UUID of the dashboard after you import it (step 3 below) | Copy from the dashboard URL after import |
+| `releaseDashboardV12Id` | The UUID of the dashboard after you import it (step 3 below) | Copy from the dashboard URL after import |
 
 > **Format**: Credential Vault IDs look like `CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx`. Use the ID, not the token value itself.
 
@@ -26,7 +26,7 @@ You need four values from your Dynatrace tenant. Gather these first.
 ### Step 1 — Import the dashboard
 
 1. In Dynatrace, go to **Dashboards**
-2. Click **Upload** and select `dashboards/release-tracking-dashboard.v10.json`
+2. Click **Upload** and select `dashboards/release-tracking-dashboard.v12.json`
 3. Open the uploaded dashboard and copy its UUID from the URL:
    ```
    /ui/apps/dynatrace.dashboards/dashboard/<THIS-IS-YOUR-UUID>
@@ -36,7 +36,7 @@ You need four values from your Dynatrace tenant. Gather these first.
 ### Step 2 — Import the workflow
 
 1. Go to **Workflows**
-2. Click **Upload** and select `workflows/version-intelligence-sync.v10.workflow.json`
+2. Click **Upload** and select `workflows/version-intelligence-sync.v12.workflow.json`
 
 ### Step 3 — Set workflow inputs
 
@@ -49,7 +49,7 @@ You need four values from your Dynatrace tenant. Gather these first.
    | `apiTokenVaultId` | Your Credential Vault ID (ReadConfig token) |
    | `rumTokenVaultId` | Your Credential Vault ID (RUM token) |
    | `platformTokenVaultId` | Your Credential Vault ID (platform JWT token) |
-   | `releaseDashboardV10Id` | Dashboard UUID from Step 1 |
+   | `releaseDashboardV12Id` | Dashboard UUID from Step 1 |
 
 4. Save
 
@@ -58,7 +58,7 @@ You need four values from your Dynatrace tenant. Gather these first.
 The workflow guide (visible in Dynatrace's Workflow Guide panel) cannot be imported automatically. Paste it in manually:
 
 1. In the workflow, click **Workflow options** → **Guide**
-2. Copy the contents of [docs/WORKFLOW_GUIDE_V10.md](docs/WORKFLOW_GUIDE_V10.md)
+2. Copy the contents of [docs/WORKFLOW_GUIDE_V12.md](docs/WORKFLOW_GUIDE_V12.md)
 3. Paste into the Guide editor and save
 
 ![Workflow guide](docs/images/workflow-guide.png)
@@ -77,7 +77,7 @@ The workflow guide (visible in Dynatrace's Workflow Guide panel) cannot be impor
 | Symptom | Fix |
 |---|---|
 | Dashboard update fails with 401 JWT parse error | Set a valid platform JWT token in `platformTokenVaultId` |
-| Dashboard cards show no data after run | Verify `releaseDashboardV10Id` matches your dashboard UUID |
+| Dashboard cards show no data after run | Verify `releaseDashboardV12Id` matches your dashboard UUID |
 | `Token Authentication failed` on rum or oneagent tasks | Rotate the token stored inside the Credential Vault entry referenced by `rumTokenVaultId` |
 | HTTP 403 from RUM or events APIs | The token is valid but missing required scopes — add `ReadSyntheticData` and `events.ingest` |
 

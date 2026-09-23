@@ -21,7 +21,7 @@
       },
       "1": {
         "type": "markdown",
-        "content": "## Global Summary\n\n- **Components with newer published release than running:** 0\n- **Components:** None\n- **Card format:** Current and Next Planned per component\n- **Data source:** workflow-generated lookups and parsed release notes\n- **Parser detail mode:** itemized Features, Breaking changes, and Fixes/Maintenance from each release URL\n- **Get updates:** [github.com/jwl17330536/dynatrace-version-release-tracking](https://github.com/jwl17330536/dynatrace-version-release-tracking)",
+        "content": "## Global Summary\n\n- **Components with newer published release than running:** 0\n- **Components:** None\n- **Card format:** Current and Next Planned per component\n- **Data source:** workflow-generated lookups and parsed release notes\n- **Parser detail mode:** itemized Features, Breaking changes, and Fixes/Maintenance from each release URL\n- **Get updates:** [GitHub: dynatrace-version-release-tracking](https://github.com/jwl17330536/dynatrace-version-release-tracking)",
         "title": ""
       },
       "2": {
