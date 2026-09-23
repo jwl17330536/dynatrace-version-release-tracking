@@ -6,7 +6,7 @@ PREFLIGHT_ARGS ?=
 .PHONY: help static live preflight preflight-static preflight-v5 preflight-legacy preflight-exec self-check ci-check release-readiness deploy deploy-dry deploy-all
 
 DEPLOY_CONTEXT ?=
-DEPLOY_VERSION ?= v11
+DEPLOY_VERSION ?= v12
 
 help:
 	@echo "dynatrace-version-release-tracking automation targets"
