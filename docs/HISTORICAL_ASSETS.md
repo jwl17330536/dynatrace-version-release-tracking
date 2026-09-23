@@ -4,12 +4,12 @@ This repository keeps historical workflow and dashboard versions for traceabilit
 
 ## Not Required for Initial Install
 
-You do not need historical `v1`-`v9` assets to install and run this package.
+You do not need historical `v1`–`v11` assets to install and run this package.
 
 For first-time setup, use only:
 
-1. `workflows/version-intelligence-sync.v10.workflow.json`
-2. `dashboards/release-tracking-dashboard.v10.json`
+1. `workflows/version-intelligence-sync.v12.workflow.json`
+2. `dashboards/release-tracking-dashboard.v12.json`
 
 ## Why Historical Assets Remain
 

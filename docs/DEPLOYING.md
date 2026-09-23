@@ -9,8 +9,8 @@ The deploy pattern in this repo lets you push changes to Dynatrace with a single
 ```
 local-only/my-config.json                          ← your real values (gitignored)
          +
-dashboards/release-tracking-dashboard.v11.json     ← public dashboard template
-workflows/version-intelligence-sync.v11.workflow.json  ← public workflow template
+dashboards/release-tracking-dashboard.v12.json     ← public dashboard template
+workflows/version-intelligence-sync.v12.workflow.json  ← public workflow template
          ↓
 scripts/deploy.py                                  ← merges config into templates
          ↓
@@ -31,7 +31,7 @@ Edit `local-only/my-config.json` with your actual values:
 
 ```json
 {
-  "releaseDashboardV11Id": "paste-your-dashboard-uuid-here",
+  "releaseDashboardV12Id": "paste-your-dashboard-uuid-here",
   "dashboardId": "paste-your-dashboard-uuid-here",
   "apiTokenVaultId": "CREDENTIALS_VAULT-your-actual-id",
   "rumTokenVaultId": "CREDENTIALS_VAULT-your-actual-id",
@@ -40,7 +40,7 @@ Edit `local-only/my-config.json` with your actual values:
 ```
 
 - `dashboardId` — the UUID of the dashboard in your tenant. If set, the deploy script updates the existing dashboard. If absent, it creates a new one.
-- `releaseDashboardV11Id` — the same UUID, injected into the workflow's trigger inputs so the workflow knows which dashboard to update.
+- `releaseDashboardV12Id` — the same UUID, injected into the workflow's trigger inputs so the workflow knows which dashboard to update.
 
 This file is in `.gitignore` — it will never be committed.
 
@@ -64,7 +64,7 @@ make deploy-all
 # After deploy-all, note the dashboard UUID printed in the output.
 # Add it to local-only/my-config.json:
 #   "dashboardId": "<the-uuid>",
-#   "releaseDashboardV11Id": "<the-uuid>"
+#   "releaseDashboardV12Id": "<the-uuid>"
 # Then redeploy the workflow so it knows the dashboard UUID:
 make deploy
 ```
@@ -85,7 +85,7 @@ Prints the merged dashboard and workflow JSON to stdout — no changes made to y
 
 ```bash
 # 1. Edit a template
-vim workflows/version-intelligence-sync.v11.workflow.json
+vim workflows/version-intelligence-sync.v12.workflow.json
 
 # 2. Preview the merged output
 make deploy-dry
@@ -121,7 +121,7 @@ dtctl does not round-trip the Workflow Guide field. After deploying, re-paste th
 
 1. Open the workflow in Dynatrace
 2. Click **Workflow options** → **Guide**
-3. Paste the contents of `docs/WORKFLOW_GUIDE_V11.md`
+3. Paste the contents of `docs/WORKFLOW_GUIDE_V12.md`
 
 ---
 
@@ -129,12 +129,12 @@ dtctl does not round-trip the Workflow Guide field. After deploying, re-paste th
 
 When you're ready to publish a new version:
 
-1. `cp workflows/version-intelligence-sync.v11.workflow.json workflows/version-intelligence-sync.v12.workflow.json`
-2. `cp dashboards/release-tracking-dashboard.v11.json dashboards/release-tracking-dashboard.v12.json`
-3. Make your changes to the v12 files
-4. `make deploy-all DEPLOY_VERSION=v12`
-5. Enable the v12 workflow schedule in Dynatrace, then disable the v11 schedule
-6. Open a PR with the v12 pair
+1. `cp workflows/version-intelligence-sync.v12.workflow.json workflows/version-intelligence-sync.v13.workflow.json`
+2. `cp dashboards/release-tracking-dashboard.v12.json dashboards/release-tracking-dashboard.v13.json`
+3. Make your changes to the v13 files
+4. `make deploy-all DEPLOY_VERSION=v13`
+5. Enable the v13 workflow schedule in Dynatrace, then disable the v12 schedule
+6. Open a PR with the v13 pair
 
 ---
 
