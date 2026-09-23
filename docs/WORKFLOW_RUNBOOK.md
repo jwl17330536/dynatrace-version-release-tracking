@@ -3,7 +3,7 @@
 ## Workflow Identity
 - Title: Version Intelligence Sync v3
 - File: workflows/version-intelligence-sync.v3.workflow.json
-- Canonical workflow ID: 786ad6e6-cf90-4e1d-a67e-6544f2d5be8d
+- Canonical workflow ID: <HISTORICAL_ID>
 
 ## Workflow Guide Source
 - UI guide markdown source: docs/WORKFLOW_GUIDE_V3.md

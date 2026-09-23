@@ -7,10 +7,10 @@ This repository was initialized by migrating Version Intelligence assets from th
 ## Cutover Result
 
 - New dashboard created: `Dynatrace Component Release Tracking v9`
-- Dashboard ID: `71ce9cf7-4736-46bf-ae51-b9977d2bf19a`
+- Dashboard ID: `<HISTORICAL_ID>`
 - New workflow created: `Version Intelligence Sync v9 Markdown Dashboard`
-- Workflow ID: `c446519c-e8fe-430d-8473-a29086986254`
-- Previous workflow v8 (`2ed34b17-dff8-46d8-aeea-2310f8b3796c`) disabled
+- Workflow ID: `<HISTORICAL_ID>`
+- Previous workflow v8 (`<HISTORICAL_ID>`) disabled
 
 ## Corrective Changes in v9
 
@@ -30,7 +30,7 @@ Dynatrace UI supports a Workflow Guide markdown panel. Because dtctl workflow ex
 - Dashboard ID: `<YOUR_DASHBOARD_UUID>`
 - New workflow created: `Version Intelligence Sync v10 Markdown Dashboard`
 - Workflow ID: `<YOUR_WORKFLOW_UUID>`
-- Previous workflow v9 (`c446519c-e8fe-430d-8473-a29086986254`) disabled
+- Previous workflow v9 (`<HISTORICAL_ID>`) disabled
 
 ### v10 UX/content updates
 

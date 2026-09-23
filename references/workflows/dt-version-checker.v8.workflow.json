@@ -72,5 +72,5 @@
   },
   "actor": "<YOUR_DYNATRACE_USER_ID>",
   "guide": "\nPolicy semantics in v8: \"unsupported\" is only assigned when a numeric support floor is explicitly available from configured versions. If no support floor is exposed by the API, versions below target are marked \"below_target\" (not unsupported).\n",
-  "id": "dbe59954-b71b-4bd1-844d-245ea7ea2b5b"
+  "id": "<HISTORICAL_ID>"
 }

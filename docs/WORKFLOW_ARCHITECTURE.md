@@ -3,7 +3,7 @@
 ## Workflow
 - Title: Version Intelligence Sync v2
 - File: workflows/version-intelligence-sync.v2.workflow.json
-- Canonical workflow ID: 298cd024-8813-4a48-b5af-057537b9945a
+- Canonical workflow ID: <HISTORICAL_ID>
 - Schedule: Daily cron (single active scheduler policy)
 
 ## Current Task Graph

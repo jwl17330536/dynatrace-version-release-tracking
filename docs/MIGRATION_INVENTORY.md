@@ -50,24 +50,24 @@ Before creating any new workflow/dashboard in this repository:
 
 ## Validation Snapshot (2026-08-05)
 - Workflow applied and executed successfully after parser and upload fixes.
-  - Workflow ID: `92ebd560-5632-49c1-8f81-0782b40ac4eb`
-  - Verified execution ID: `4cb9636e-c4e4-47a6-b302-d8701bfb5e0d` (SUCCESS)
+  - Workflow ID: `<HISTORICAL_ID>`
+  - Verified execution ID: `<HISTORICAL_ID>` (SUCCESS)
 - Lookup upload verification from workflow run:
   - `/lookups/dt_component_release_status` rowCount: 10
   - `/lookups/dt_component_runtime_versions` rowCount: 7
 - Dashboard deployed with corrected query contracts and runtime source-health tile.
-  - Dashboard ID: `065fa647-132c-4c23-9895-a55d0710b88c`
+  - Dashboard ID: `<HISTORICAL_ID>`
 
 ## Validation Snapshot (2026-08-06)
 - Workflow v2 applied and executed successfully with schedule UI inputs and vault-first config references.
-  - Workflow ID: `298cd024-8813-4a48-b5af-057537b9945a`
-  - Verified execution ID: `f09c5f8d-a32c-47b3-b5f6-dc3d169c0f9f` (SUCCESS)
+  - Workflow ID: `<HISTORICAL_ID>`
+  - Verified execution ID: `<HISTORICAL_ID>` (SUCCESS)
 - Lookup upload verification from workflow run:
   - `/lookups/dt_component_release_status` rowCount: 10
   - `/lookups/dt_component_runtime_versions` rowCount: 7
 - Tenant deduplication completed for v2 title collisions:
-  - Removed duplicate workflow IDs: `87e2c28d-9736-4c71-bdfc-185947e2764b`, `af7405a3-b48e-43bc-b1d6-a4ee787d97d6`, `1e896ac7-8e95-4a70-98aa-a4c83fe03c16`, `1501b8d2-0493-421f-94e4-2343e36b8fe3`
-  - Retained canonical workflow ID: `298cd024-8813-4a48-b5af-057537b9945a`
+  - Removed duplicate workflow IDs: `<HISTORICAL_ID>`, `<HISTORICAL_ID>`, `<HISTORICAL_ID>`, `<HISTORICAL_ID>`
+  - Retained canonical workflow ID: `<HISTORICAL_ID>`
 
 ## Validation Snapshot (2026-08-06, Dashboard Repair)
 - Incident: dashboard tiles failed with `FIELD_DOES_NOT_EXIST` for `component` due to lookup tables being overwritten with zero records and zero columns.
@@ -77,38 +77,38 @@ Before creating any new workflow/dashboard in this repository:
   - Upload tasks now return API response payload for diagnostics.
   - Lookup dedupe key switched from `component` to synthetic `lookup_key` so latest+next release rows and runtime distributions are retained.
 - Verification evidence:
-  - Workflow ID: `298cd024-8813-4a48-b5af-057537b9945a`
-  - Verified execution IDs: `d6249419-d366-4ce7-93a6-5c60e14cdc84` and `26f71710-56ac-4ddd-8602-2dae0097125b` (SUCCESS)
+  - Workflow ID: `<HISTORICAL_ID>`
+  - Verified execution IDs: `<HISTORICAL_ID>` and `<HISTORICAL_ID>` (SUCCESS)
   - Release lookup query count: 10 rows
   - Runtime lookup query count: 7 rows
   - Tile-equivalent DQL queries now execute successfully without field errors.
-  - Canonical dashboard retained: `065fa647-132c-4c23-9895-a55d0710b88c` (temporary duplicate removed).
+  - Canonical dashboard retained: `<HISTORICAL_ID>` (temporary duplicate removed).
 
 ## Validation Snapshot (2026-08-06, v3 Candidate)
 - Created v3 workflow from the validated v2 artifact with schedule intentionally disabled for controlled cutover.
-  - Workflow ID: `786ad6e6-cf90-4e1d-a67e-6544f2d5be8d`
+  - Workflow ID: `<HISTORICAL_ID>`
   - Title: `Version Intelligence Sync v3`
   - Schedule state: `isActive=false`
   - Layout preservation check: `position_diffs=0` against live v2 export.
 - Manual validation run:
-  - Execution ID: `41e9077f-f11c-4889-ac8e-d688c3fc6161` (SUCCESS)
+  - Execution ID: `<HISTORICAL_ID>` (SUCCESS)
   - Post-run lookup counts: release=10, runtime=7
 
 ## Validation Snapshot (2026-08-06, v3 Hardening Complete)
 - Hardened `version-intelligence-sync.v3.workflow.json` to remove unsupported Run JavaScript Jinja interpolation and rely on `execution().input` / `execution().params`.
 - Verified v3 execution success with strict config values provided via run parameters.
-  - Workflow ID: `786ad6e6-cf90-4e1d-a67e-6544f2d5be8d`
-  - Verified execution ID: `e53c0cdb-81b0-4987-9692-017943568667` (SUCCESS)
-  - Verified execution ID: `f96342ad-2f01-4505-9ba8-d37ac88bf45f` (ERROR before final RUM fix)
+  - Workflow ID: `<HISTORICAL_ID>`
+  - Verified execution ID: `<HISTORICAL_ID>` (SUCCESS)
+  - Verified execution ID: `<HISTORICAL_ID>` (ERROR before final RUM fix)
 - Verified no-params manual execution currently fails as expected when required values are not supplied at run time.
-  - Verified execution ID: `b7ddb101-c06c-4ae3-9d42-eb078611673b` (ERROR)
+  - Verified execution ID: `<HISTORICAL_ID>` (ERROR)
   - Missing keys during manual no-params run: `docsSitemapUrl`, `apiTokenVaultId`, `rumTokenVaultId`
   - Operational guidance: execute manually with `--params` for required keys, or run from a trigger path that provides input values.
 - Dashboard v2 query contract revalidated after DQL conditional fix (`if(..., else: ...)`).
   - Validation script: `scripts/validate_dashboard_v2_queries.py`
   - Result: all 17 data tiles PASS
 - Dashboard v2 redeployed after query fix:
-  - Dashboard ID: `4832f8d0-49a8-4b43-8f61-d03b480fd766`
+  - Dashboard ID: `<HISTORICAL_ID>`
 
 ## Platform Constraint Note (Workflow Guide)
 - Although `guide` is present in local JSON, `dtctl get workflow` returns `guide: null` after apply for v3.
@@ -117,7 +117,7 @@ Before creating any new workflow/dashboard in this repository:
 ## Implementation Snapshot (2026-08-05, v4/v3 Start)
 - Started v4/v3 implementation track in repository artifacts.
   - New workflow artifact staged: `workflows/version-intelligence-sync.v4.workflow.json`
-  - Workflow ID assigned for v4: `f82e7c9e-403a-4b77-9e3b-ef086279e4b0`
+  - Workflow ID assigned for v4: `<HISTORICAL_ID>`
   - New dashboard artifact staged: `field-asset-library/dashboards/platform/release-tracking-dashboard/release-tracking-dashboard.v3.json`
 - Dashboard v3 direction:
   - Reduced table density versus v2.
@@ -129,12 +129,12 @@ Before creating any new workflow/dashboard in this repository:
 ## Validation Snapshot (2026-08-06, v5 Parser + Deterministic Fallback)
 - v5 workflow applied and updated to deployed state.
   - Workflow artifact: `workflows/version-intelligence-sync.v5.workflow.json`
-  - Workflow ID: `827008e7-f74d-455a-8324-72629ff6225f`
+  - Workflow ID: `<HISTORICAL_ID>`
 - Initial manual executions failed due missing runtime parameters (expected with empty manual input on this workflow model).
-  - Failed execution IDs: `b541aeab-4a31-47ef-a92f-cf1368450b51`, `3cb2d9a0-d1c6-4e11-96bf-f48b7908d209`
+  - Failed execution IDs: `<HISTORICAL_ID>`, `<HISTORICAL_ID>`
   - Missing values reported: `apiTokenVaultId`, `rumTokenVaultId`
 - Parameterized validation execution succeeded end-to-end.
-  - Success execution ID: `5451dbbf-233e-4738-9dbf-cc4595dccac1`
+  - Success execution ID: `<HISTORICAL_ID>`
   - Final state: `SUCCESS`
 - Lookup upload verification from successful v5 run:
   - `/lookups/dt_component_release_status` statusCode: `200`, rowCount: `10`
@@ -157,9 +157,9 @@ Before creating any new workflow/dashboard in this repository:
   - `upload_runtime_lookup` now defaults `releaseLookupPath`, `runtimeLookupPath`, `lookupLocale`, and `lookupTimezone` when omitted.
 - Validation sequence:
   - First no-params run failed on strict upload-runtime config gate before final patch.
-    - Execution ID: `a137279f-e985-4a08-9d8a-aa3ba6ec3a59` (ERROR)
+    - Execution ID: `<HISTORICAL_ID>` (ERROR)
   - Re-applied workflow after runtime upload defaults patch and re-ran with no params.
-    - Execution ID: `4d422c91-ad8d-4b19-8f6a-8ab59450d366` (SUCCESS)
+    - Execution ID: `<HISTORICAL_ID>` (SUCCESS)
 - No-params success verification from task outputs:
   - `/lookups/dt_component_release_status` statusCode: `200`, rowCount: `10`
   - `/lookups/dt_component_runtime_versions` statusCode: `200`, rowCount: `7`
@@ -174,7 +174,7 @@ Before creating any new workflow/dashboard in this repository:
 - Revalidation evidence:
   - Dashboard query smoke tests: `python3 scripts/validate_dashboard_v3_queries.py` => all 7 data tiles PASS.
   - Live tile 6 DQL result after patch: `record_count=5`, `newer_available=0`, `aligned=5`.
-  - Dashboard applied with patched query semantics: `152d125f-a3cc-470b-a612-ba4e83fd0016`.
+  - Dashboard applied with patched query semantics: `<HISTORICAL_ID>`.
 
 ## Validation Snapshot (2026-08-06, v3 Upgrade Queue Tri-State Status)
 - Refined tile 6 action semantics to avoid false-positive `aligned` when runtime version is unknown.
@@ -185,7 +185,7 @@ Before creating any new workflow/dashboard in this repository:
 - Revalidation evidence:
   - Dashboard query smoke tests: `python3 scripts/validate_dashboard_v3_queries.py` => all 7 data tiles PASS.
   - Live tile 6 DQL result after tri-state patch: `record_count=5`, `newer_available=0`, `runtime_unknown=2`, `aligned=3`.
-  - Dashboard updated in place: `152d125f-a3cc-470b-a612-ba4e83fd0016`.
+  - Dashboard updated in place: `<HISTORICAL_ID>`.
 
 ## Validation Snapshot (2026-08-06, Automated Red-Path Ranking Check)
 - Added targeted backlog validator: `scripts/validate_upgrade_queue_red_path.py`.
@@ -215,10 +215,10 @@ Before creating any new workflow/dashboard in this repository:
   - `SKIP` corresponds to expected no-backlog state for red-path ranking validation.
 
 ## Implementation Snapshot (2026-08-05, Dashboard + Workflow Gap Fixes)
-- Dashboard v3 semantics updated and deployed in place (`152d125f-a3cc-470b-a612-ba4e83fd0016`):
+- Dashboard v3 semantics updated and deployed in place (`<HISTORICAL_ID>`):
   - Tile 1 (`Action Required Components`) now includes both runtime source issues and upgrade backlog signal (`is_newer_than_running=true`).
   - Tile 2 (`Components In Watch State`) now reflects runtime watch states (`partial`, `not_configured`) plus release watch indicators (`release_status != current` or `is_next_planned=true`).
-- Workflow v5 reliability fix deployed (`827008e7-f74d-455a-8324-72629ff6225f`):
+- Workflow v5 reliability fix deployed (`<HISTORICAL_ID>`):
   - `rum_collect_runtime_versions` no longer references out-of-scope `rumTokenVaultId` in helper function auth-error paths.
   - Added explicit script-level tracking variable for vault ID context in 401 diagnostics.
 - Post-implementation validation evidence:
@@ -231,8 +231,8 @@ Before creating any new workflow/dashboard in this repository:
   - Removed literal `\\n` code artifacts in embedded script source.
   - Preserved explicit `RUM_TOKEN_VAULT_ID` assignment and usage for 401 diagnostics.
 - Deployed updated v5 workflow and executed manual no-params run:
-  - Workflow ID: `827008e7-f74d-455a-8324-72629ff6225f`
-  - Execution ID: `360987f2-3514-4c8c-8f10-8badf7f0604d` (`SUCCESS`)
+  - Workflow ID: `<HISTORICAL_ID>`
+  - Execution ID: `<HISTORICAL_ID>` (`SUCCESS`)
   - Runtime: 23 seconds
 
 ## Validation Snapshot (2026-08-06, Workflow Contract Guard)
