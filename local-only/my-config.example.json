@@ -1,5 +1,5 @@
 {
-  "releaseDashboardV11Id": "<YOUR_DASHBOARD_UUID>",
+  "releaseDashboardV12Id": "<YOUR_DASHBOARD_UUID>",
   "dashboardId": "<YOUR_DASHBOARD_UUID>",
   "ownerId": "<YOUR_DYNATRACE_USER_UUID>",
   "apiTokenVaultId": "CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx",
