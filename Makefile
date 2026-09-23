@@ -3,10 +3,18 @@ SHELL := /bin/bash
 PROFILE ?= canonical
 PREFLIGHT_ARGS ?=
 
-.PHONY: help static live preflight preflight-static preflight-v5 preflight-legacy preflight-exec self-check ci-check release-readiness
+.PHONY: help static live preflight preflight-static preflight-v5 preflight-legacy preflight-exec self-check ci-check release-readiness deploy deploy-dry
+
+DEPLOY_CONTEXT ?=
+DEPLOY_VERSION ?= v10
 
 help:
 	@echo "dynatrace-version-release-tracking automation targets"
+	@echo ""
+	@echo "Deploy targets (require local-only/my-config.json):"
+	@echo "  make deploy              # Deploy v10 workflow to your Dynatrace tenant via dtctl"
+	@echo "  make deploy-dry          # Preview merged workflow JSON without deploying"
+	@echo "  make deploy DEPLOY_CONTEXT=sprint  # Deploy to a specific dtctl context"
 	@echo ""
 	@echo "Core smoke targets:"
 	@echo "  make static            # Local static CI smoke flow"
@@ -56,3 +64,9 @@ ci-check: self-check static
 
 release-readiness:
 	python3 scripts/run_release_readiness.py
+
+deploy:
+	python3 scripts/deploy.py --version $(DEPLOY_VERSION) $(if $(DEPLOY_CONTEXT),--context $(DEPLOY_CONTEXT),)
+
+deploy-dry:
+	python3 scripts/deploy.py --dry-run --version $(DEPLOY_VERSION) $(if $(DEPLOY_CONTEXT),--context $(DEPLOY_CONTEXT),)

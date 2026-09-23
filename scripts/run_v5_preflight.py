@@ -7,7 +7,7 @@ import sys
 import time
 from pathlib import Path
 
-DEFAULT_WORKFLOW_ID = "827008e7-f74d-455a-8324-72629ff6225f"
+DEFAULT_WORKFLOW_ID = "<HISTORICAL_ID>"
 
 
 def run_cmd(cmd):

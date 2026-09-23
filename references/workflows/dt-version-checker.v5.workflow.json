@@ -1,8 +1,8 @@
 {
   "title": "Version Baseline Sync v5",
   "description": "Daily workflow: fetch latest OneAgent release + ESS oldest supported from docs and store as custom event. Also collects RUM Classic JS library version per app and stores per-app custom events.",
-  "actor": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
-  "owner": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "actor": "<YOUR_DYNATRACE_USER_ID>",
+  "owner": "<YOUR_DYNATRACE_USER_ID>",
   "ownerType": "USER",
   "isPrivate": false,
   "schemaVersion": 4,

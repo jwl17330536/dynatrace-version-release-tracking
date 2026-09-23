@@ -14,7 +14,8 @@ temp/
 
 # Local scaffolding and private notes
 .local/
-local-only/
+local-only/*
+!local-only/my-config.example.json
 docs/local-only/
 *.local.md
 

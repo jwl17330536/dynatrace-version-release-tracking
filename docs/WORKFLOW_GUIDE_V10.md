@@ -82,8 +82,7 @@ For manual runs from `dtctl exec workflow`, pass the same values with `--params 
 2. Expected format: dashboard document UUID
 3. Where to get it:
    Use `dtctl get dashboard <id-or-name> -o json --plain`, or copy the document ID from the dashboard URL/resource details.
-4. Current v10 value in this repo:
-   `20abcd0f-9f19-4545-9565-575bb7cd939d`
+4. Set this to your dashboard UUID after importing `dashboards/release-tracking-dashboard.v10.json` into your tenant. Copy the UUID from the dashboard URL.
 
 ## Setup
 
