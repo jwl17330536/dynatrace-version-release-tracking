@@ -27,9 +27,9 @@ Dynatrace UI supports a Workflow Guide markdown panel. Because dtctl workflow ex
 ## v10 Iteration and Cutover
 
 - New dashboard created: `Dynatrace Component Release Tracking v10`
-- Dashboard ID: `20abcd0f-9f19-4545-9565-575bb7cd939d`
+- Dashboard ID: `<YOUR_DASHBOARD_UUID>`
 - New workflow created: `Version Intelligence Sync v10 Markdown Dashboard`
-- Workflow ID: `748a7500-1486-4829-8739-54558d7bf123`
+- Workflow ID: `<YOUR_WORKFLOW_UUID>`
 - Previous workflow v9 (`c446519c-e8fe-430d-8473-a29086986254`) disabled
 
 ### v10 UX/content updates

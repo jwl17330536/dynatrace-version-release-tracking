@@ -1,7 +1,7 @@
 {
   "name": "Dynatrace Component Release Tracking v10",
   "type": "dashboard",
-  "owner": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "owner": "<YOUR_DYNATRACE_USER_ID>",
   "isPrivate": true,
   "version": 5,
   "modificationInfo": {

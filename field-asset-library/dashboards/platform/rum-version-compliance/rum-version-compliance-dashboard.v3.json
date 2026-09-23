@@ -2,7 +2,7 @@
   "id": "111751cf-73fa-4435-acbb-86f8d7c95445",
   "name": "Rum Version Compliance v3",
   "type": "dashboard",
-  "owner": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "owner": "<YOUR_DYNATRACE_USER_ID>",
   "isPrivate": true,
   "version": 1,
   "modificationInfo": {

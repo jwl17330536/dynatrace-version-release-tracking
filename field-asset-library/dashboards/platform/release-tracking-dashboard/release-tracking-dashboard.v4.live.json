@@ -2,7 +2,7 @@
   "id": "3f290f59-1263-40c9-9c34-db3474795727",
   "name": "Dynatrace Component Release Tracking v4",
   "type": "dashboard",
-  "owner": "b9e9bf8e-04b6-4e36-b150-f5682599a21e",
+  "owner": "<YOUR_DYNATRACE_USER_ID>",
   "isPrivate": false,
   "version": 46,
   "modificationInfo": {
