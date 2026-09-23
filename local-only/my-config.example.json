@@ -1,5 +1,6 @@
 {
-  "releaseDashboardV10Id": "<YOUR_DASHBOARD_UUID>",
+  "releaseDashboardV11Id": "<YOUR_DASHBOARD_UUID>",
+  "dashboardId": "<YOUR_DASHBOARD_UUID>",
   "apiTokenVaultId": "CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx",
   "rumTokenVaultId": "CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx",
   "platformTokenVaultId": "CREDENTIALS_VAULT-xxxxxxxxxxxxxxxx"
