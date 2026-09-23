@@ -6,32 +6,20 @@ Cross-component view for SaaS, OneAgent, ActiveGate, Operator, and EdgeConnect c
 ## Purpose
 When administrators need one place to compare currently running Dynatrace component versions against current and upcoming published releases, this dashboard reduces manual release-note correlation and rollout planning effort.
 
+## Current Version
+**v12** — see `dashboards/release-tracking-dashboard.v12.json` in the repo root.
+
 ## Setup
-1. Import the dashboard JSON in this folder into your Dynatrace tenant.
-2. Confirm companion workflow outputs are available.
-3. Share the dashboard with your environment (read) and keep owner edit permissions.
-4. Capture and add screenshot.png before contribution PR.
+1. Follow the operator install guide: [QUICK_START.md](../../../../QUICK_START.md)
+2. Import the latest dashboard JSON from `dashboards/` in the repo root.
+3. Deploy the companion workflow using `make deploy-all` (see [docs/DEPLOYING.md](../../../../docs/DEPLOYING.md)).
+4. Share the dashboard with your environment (read) and keep owner edit permissions.
 
 ## Companion Workflow
-- Title: Version Intelligence Sync v5
-- File: workflows/version-intelligence-sync.v5.workflow.json
-
-## Dashboard Variants
-1. `release-tracking-dashboard.v2.json`: detailed engineering baseline with broad table coverage.
-2. `release-tracking-dashboard.v3.json`: operations-first layout with stronger triage signal and reduced table density.
-3. `release-tracking-dashboard.v4.json`: component-sectioned operations layout with per-component runtime/release/queue/risk views.
-
-## v4 Focus Areas
-1. One global action-required summary tile.
-2. Dedicated sections for SaaS, ActiveGate, OneAgent, Operator, and Edge.
-3. Per-section runtime source health and release status views.
-4. Per-section upgrade queue with aligned/unknown/newer action state.
-5. Per-section risk/highlights for latest published release.
-
-## Reference Documentation
-- docs/DASHBOARD_ARCHITECTURE.md
-- docs/DASHBOARD_QUERY_CATALOG.md
+- Title: Version Intelligence Sync v12
+- File: `workflows/version-intelligence-sync.v12.workflow.json`
 
 ## Notes
+- Dashboard version history (v1–v12) is preserved in git. All canonical versions are in the `dashboards/` folder at the repo root.
 - Replace placeholder tenant_url in meta.yaml with the live shared dashboard URL.
 - Do not include tokens, credentials, or customer-confidential values.

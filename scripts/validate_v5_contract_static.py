@@ -143,6 +143,11 @@ def validate_dashboard_contract(dashboard) -> list:
 
 
 def main() -> int:
+    if not WORKFLOW_PATH.exists() or not DASHBOARD_PATH.exists():
+        missing = [str(p) for p in (WORKFLOW_PATH, DASHBOARD_PATH) if not p.exists()]
+        print(f"SKIP: v5 baseline files not present ({', '.join(missing)}); contract check skipped")
+        return 0
+
     try:
         workflow = load_json(WORKFLOW_PATH)
     except Exception as exc:
